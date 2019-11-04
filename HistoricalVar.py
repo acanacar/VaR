@@ -6,30 +6,17 @@ store = pd.HDFStore(hist_store)
 data = store['/all']
 data.columns = data.columns.swaplevel(0, 1)
 
-df = get_df(data=data, col='Adj Close')
+df,returns = get_df(data=data, col='Adj Close')
 
 securities, weights = get_portfolio(data=df)
 
-
-
-
-df['return'] = df[securities].dot(weights)
-df['return'].name = 'return'
-df_returns = df['return'] * 100
+returns['return'] = returns[securities].dot(weights)
+returns['return'].name = 'return'
+df_returns = returns['return'] * 100
 
 period_intervals = [100, 252, 350, 500]
 confidence_intervals = [.68, .95, .997, 1]
 method = 'Historical_Simulation'
-
-
-#mean-variance
-mean_var_period=252
-mean_var_risk = pd.Series(index=df.index)
-for i in range(0,len(df)-mean_var_period):
-    if i==0:
-        Data = df[securities][-mean_var_period:]
-mean_var_returns = (pow(df[securities].iloc[-1] / df[securities].iloc[0], 1 / len(df)) - 1) * mean_var_period
-
 
 df_VaRs = [
     (df_returns, {'securities': securities,
@@ -45,7 +32,7 @@ for p_i_ in period_intervals:
                      Method=method,
                      Confidence_Interval=c_i_,
                      Period_Interval=p_i_,
-                     Series=True)
+                     Series=False)
         title = {'securities': securities,
                  'periodic_interval': p_i_,
                  'confidence_interval': c_i_,

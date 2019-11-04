@@ -1,4 +1,5 @@
 from constants import *
+from scipy.stats import norm
 
 
 def VaR_Compare(Returns, Confidence_Interval=0.95, Period_Interval=100, EWMA_Discount_Factor=0.94):
@@ -34,9 +35,9 @@ def get_df(data, col):
     df = df.dropna(axis=1, how='all')
     df = df.dropna(axis=0, how='any')
 
-    df = df.pct_change().iloc[1:]
-    df.sort_index()
-    return df
+    returns = df.pct_change().iloc[1:]
+    returns.sort_index()
+    return df, returns
 
 
 def show_plot(data, ticker):
@@ -60,8 +61,9 @@ def get_portfolio(data):
     return cols, weights
 
 
-def VaR(Data,Returns, Method='Parametric Normal', Confidence_Interval=0.95, Period_Interval=None,
+def VaR(Data, Returns, Method='Parametric Normal', Confidence_Interval=0.95, Period_Interval=None,
         EWMA_Discount_Factor=0.94, Series=False, removeNa=True):
+
     if Method == 'Historical_Simulation':
 
         if Series == False:
@@ -77,4 +79,20 @@ def VaR(Data,Returns, Method='Parametric Normal', Confidence_Interval=0.95, Peri
                 else:
                     Data = Returns[-(Period_Interval + i):-i]
                 Value_at_Risk[-i - 1] = -np.percentile(Data, 1 - Confidence_Interval)
+    if Method == 'Parametric Normal':
+
+        if Series == False:
+            Data = Returns[-Period_Interval:]
+            stdev = np.std(Data)
+            Value_at_Risk = stdev * norm.ppf(Confidence_Interval)
+        if Series == True:
+            Value_at_Risk = pd.Series(index=Returns.index, name='ParVaR')
+            for i in range(0, len(Returns) - Period_Interval):
+                if i == 0:
+                    Data = Returns[-(Period_Interval):]
+                else:
+                    Data = Returns[-(Period_Interval + i):-i]
+                stdev = np.std(Data)
+                Value_at_Risk[-i - 1] = stdev * norm.ppf(Confidence_Interval)
+
     return (Value_at_Risk)

@@ -4,19 +4,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import functools
 import random
+import getpass
+
+if getpass.getuser()=='a.acar':
+    hist_store = str(
+        r'C:\Users\a.acar\PycharmProjects\VaR\sources\hist_data.h5')
 
 
-data_path = Path('/home/acanacar/Desktop/data/')
-
-bar_path = str(data_path / 'bar/')
-tickall_path = str(data_path / 'tickall.pkl')
-
-hist_store = str(
-    '/home/acanacar/Desktop/projects/pycharm/VaR/sources/hist_data.h5')
 
 
-# hist_store = str(
-#     r'C:\Users\a.acar\PycharmProjects\Advanced-Deep-Trading-master\analysistemporary\VaR\hist_data.h5')
+if getpass.getuser()=='root':
+    data_path = Path('/home/acanacar/Desktop/data/')
+
+    bar_path = str(data_path / 'bar/')
+    tickall_path = str(data_path / 'tickall.pkl')
+
+    hist_store = str(
+        '/home/acanacar/Desktop/projects/pycharm/VaR/sources/hist_data.h5')
+
+
 
 
 def Tickers():
