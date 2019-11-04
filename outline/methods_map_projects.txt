@@ -1,0 +1,50 @@
+BSIC
+
+Parametric Normal,
+Parametric EWMA,
+Historical Simulation with EWMA.
+Filtered Historical Simulation with EWMA.
+
+
+KaihuaHuang_VaR
+
+historical VaR,
+parametric VaR,
+PCA VaR
+
+bmustafa
+
+Parametric VaR
+
+longtng
+
+Historical method VaR and CVaR ,
+the mean-variance method VaR and CVaR ,
+the Monte Carlo simulation method VaR and CVaR
+
+jhihan
+
+Historical simulation with Volatility updating
+Volatility Model : GARCH(1,1)
+
+cazhu
+
+for Single and Multiple Stocks
+
+Historical VaR
+Variance VaR
+
+flodiggi
+
+Historical VaR
+
+ie-mcsbt-team-c
+
+• Parametric calculation VaR
+• Historical simulation VaR
+• Montecarlo VaR
+
+max-fitzpatrick
+
+historical VaR
+
