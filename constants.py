@@ -1,3 +1,4 @@
+import math
 import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -5,6 +6,7 @@ import numpy as np
 import functools
 import random
 import getpass
+from scipy.stats import norm
 
 if getpass.getuser()=='a.acar':
     hist_store = str(
@@ -59,3 +61,5 @@ def Tickers():
         'VAKBN.IS',
         'YKBNK.IS']
     return tickers
+
+method_lookup={'Historical':'Historical_Simulation'}

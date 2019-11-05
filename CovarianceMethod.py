@@ -44,6 +44,8 @@ def VaR_Covariance(returns_, period, confidence, weights, securities, Series=Fal
 df, daily_returns = get_df(data=data, col='Adj Close')
 securities, weights = get_portfolio(data=df)
 weights = np.array(weights)
+actual_portfolio_return = daily_returns[securities].dot(weights)
+actual_portfolio_return.name = 'actual_return'
 
 '''single period,confidence
 dfVaR = VaR_Covariance(
@@ -60,13 +62,11 @@ print(dfVaR)
 period_intervals = [100, 252, 350, 500]
 confidence_intervals = [.68, .95, .997, 1]
 
-actual_portfolio_return = daily_returns[securities].dot(weights)
-actual_portfolio_return.name = 'actual_return'
 dfVaRs = [
     (actual_portfolio_return, {'securities': securities,
-                              'period_interval': 'return',
-                              'confidence_interval': 'return'
-                              })
+                               'period_interval': 'return',
+                               'confidence_interval': 'return'
+                               })
 ]
 for p_i_ in period_intervals:
     for c_i_ in confidence_intervals:
@@ -80,14 +80,11 @@ for p_i_ in period_intervals:
                                 'confidence_interval': c_i_}))
 
 for show_ci in confidence_intervals:
-
-    # show_ci = .68
     All = pd.concat([df for df, title in dfVaRs if
                      title['confidence_interval'] == show_ci or title['confidence_interval'] == 'return'],
                     axis=1)
-    plt.title(str(securities)+str(weights))
+    plt.title(str(securities) + str(weights))
     All.plot(lw=1)
     png_name = 'CovarianceMethod_{}'.format(show_ci)
     png_path = r'C:\Users\a.acar\PycharmProjects\VaR\outputs\{}.png'.format(png_name)
     plt.savefig(png_path)
-plt.show()

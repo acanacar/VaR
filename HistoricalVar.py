@@ -49,6 +49,18 @@ All = pd.concat([df for df, title in df_VaRs if
 All.plot(lw=1)
 plt.show()
 
+
+for show_ci in confidence_intervals:
+    All = pd.concat([df for df, title in df_VaRs if
+                     title['confidence_interval'] == show_ci or title['confidence_interval'] == 'return'],
+                    axis=1)
+    plt.title(str(securities) + str(weights))
+    All.plot(lw=1)
+    png_name = 'CovarianceMethod_{}'.format(show_ci)
+    png_path = r'C:\Users\a.acar\PycharmProjects\VaR\outputs\{}.png'.format(png_name)
+    plt.savefig(png_path)
+
+
 # show_plot(df, 'XU100.IS')
 # show_hist_plot(df, 'XU100.IS')
 '''
