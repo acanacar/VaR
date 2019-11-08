@@ -50,8 +50,7 @@ def show_hist_plot(data, ticker):
     plt.show()
 
 
-def get_portfolio(data):
-    n = 4
+def get_portfolio(data,n=4):
 
     lis = np.random.rand(n)
     lis_sum = functools.reduce(lambda a, b: a + b, lis)

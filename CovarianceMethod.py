@@ -47,27 +47,17 @@ weights = np.array(weights)
 actual_portfolio_return = daily_returns[securities].dot(weights)
 actual_portfolio_return.name = 'actual_return'
 
-'''single period,confidence
-dfVaR = VaR_Covariance(
-    returns_=daily_returns,
-    weights=weights, securities=securities,
-    period=252, confidence=.95, Series=True
-)
-print(list(zip(securities, weights)))
-
-print(dfVaR)
-'''
-
 # multiple periods,ci
 period_intervals = [100, 252, 350, 500]
 confidence_intervals = [.68, .95, .997, 1]
 
-dfVaRs = [
+dfVaRs = []
+dfVaRs.append(
     (actual_portfolio_return, {'securities': securities,
                                'period_interval': 'return',
                                'confidence_interval': 'return'
-                               })
-]
+                               }))
+
 for p_i_ in period_intervals:
     for c_i_ in confidence_intervals:
         df_VaR = VaR_Covariance(
@@ -88,3 +78,14 @@ for show_ci in confidence_intervals:
     png_name = 'CovarianceMethod_{}'.format(show_ci)
     png_path = r'C:\Users\a.acar\PycharmProjects\VaR\outputs\{}.png'.format(png_name)
     plt.savefig(png_path)
+
+'''single period,confidence
+dfVaR = VaR_Covariance(
+    returns_=daily_returns,
+    weights=weights, securities=securities,
+    period=252, confidence=.95, Series=True
+)
+print(list(zip(securities, weights)))
+
+print(dfVaR)
+'''
