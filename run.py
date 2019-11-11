@@ -53,7 +53,9 @@ dx = pd.DataFrame(index=daily_returnsx.index, columns=multi_index)
 securities, weights = get_portfolio(data=df)
 weights = np.array(weights)
 print(securities, '\n', weights)
+import time
 for col_name, col_data in dx.iteritems():
+    start = time.time()
     method, p_i_, c_i_ = col_name[0], int(col_name[1].split('_')[-1]), float(col_name[2])
     if col_name[0] == 'Covariance':
         df_VaR = VaR_Covariance(
@@ -72,5 +74,6 @@ for col_name, col_data in dx.iteritems():
                      Series=True)
     print(col_name)
     print(len(col_data))
-
+    end = time.time()
+    print('lasted {} seconds.'.format(end-start))
 print('x')

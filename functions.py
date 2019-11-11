@@ -2,32 +2,6 @@ from constants import *
 from scipy.stats import norm
 
 
-def VaR_Compare(Returns, Confidence_Interval=0.95, Period_Interval=100, EWMA_Discount_Factor=0.94):
-    'This function calculates different VaR series and plots it in the same graph'
-
-    # Use for each VaR call the same values, here they are set
-    Ret = Returns
-    CI = Confidence_Interval
-    PI = Period_Interval
-    EWMAdf = EWMA_Discount_Factor
-
-    # Call the single VaR series
-    VaRPN = VaR(Ret, Formula='Parametric Normal', Confidence_Interval=CI, Period_Interval=PI,
-                EWMA_Discount_Factor=EWMAdf, Series=True, removeNa=True)
-    VaREWMA = VaR(Ret, Formula='Parametric EWMA', Confidence_Interval=CI, Period_Interval=PI,
-                  EWMA_Discount_Factor=EWMAdf, Series=True, removeNa=True)
-    VaRHS = VaR(Ret, Formula='Historical Simulation', Confidence_Interval=CI, Period_Interval=PI,
-                EWMA_Discount_Factor=EWMAdf, Series=True, removeNa=True)
-    VaRFHS = VaR(Ret, Formula='Filtered Historical Simulation', Confidence_Interval=CI, Period_Interval=PI,
-                 EWMA_Discount_Factor=EWMAdf, Series=True, removeNa=True)
-
-    # Concat the different VaR series in the same dataframe and plot it
-    AllVaR = pd.concat([VaRPN, VaREWMA, VaRHS, VaRFHS], axis=1)
-    AllVaR.plot(lw=1)
-
-    return (AllVaR)
-
-
 def get_df(data, col):
     df = data.iloc[:, data.columns.get_level_values(0) == col]
     df.columns = df.columns.droplevel()

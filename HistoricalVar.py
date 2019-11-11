@@ -39,7 +39,7 @@ for p_i_ in period_intervals:
                      Method=method,
                      Confidence_Interval=c_i_,
                      Period_Interval=p_i_,
-                     Series=False)
+                     Series=True)
         title = {'securities': securities,
                  'periodic_interval': p_i_,
                  'confidence_interval': c_i_,
@@ -48,14 +48,13 @@ for p_i_ in period_intervals:
             (df_VaR, title)
         )
 
-
 for show_ci in confidence_intervals:
     All = pd.concat([df for df, title in df_VaRs if
                      title['confidence_interval'] == show_ci or title['confidence_interval'] == 'return'],
                     axis=1)
     plt.title(str(securities) + str(weights))
     All.plot(lw=1)
-    png_name = 'CovarianceMethod_{}'.format(show_ci)
+    png_name = 'Historical_{}'.format(show_ci)
     png_path = r'C:\Users\a.acar\PycharmProjects\VaR\outputs\{}.png'.format(png_name)
     plt.savefig(png_path)
 
