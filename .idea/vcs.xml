@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/BSIC_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/KaihuaHuang_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/bmustafa_parametric_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/caowei0127_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cazhu_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/flodiggi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/BSIC_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/KaihuaHuang_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/bmustafa_parametric_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/caowei0127_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/cazhu_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/flodiggi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/jhihan_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/longtng_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/max_fitzpatrick_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/mcsbt_team_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/help_works/xuchenyu_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/jhihan_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/longtng_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/max_fitzpatrick_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/mcsbt_team_VaR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/xuchenyu_VaR" vcs="Git" />
+  </component>
+</project>

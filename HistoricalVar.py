@@ -20,10 +20,10 @@ returns['return'].name = 'return'
 df_returns = returns['return'] * 100  # grafikteki daha guzel goruntu icin
 
 period_intervals = [100, 252, 350, 500]
-confidence_intervals = [.68, .95, .997, 1]
+confidence_intervals = [.68, .95, .997]
 method = 'Historical_Simulation'
 
-df_VaRs = []
+df_VaRs = []  # farkli VaR hesaplamasi sonuclarini ve real return degerlerini store edecegimiz list
 
 df_VaRs.append(
     (df_returns, {'securities': securities,
@@ -53,10 +53,29 @@ for show_ci in confidence_intervals:
                      title['confidence_interval'] == show_ci or title['confidence_interval'] == 'return'],
                     axis=1)
     plt.title(str(securities) + str(weights))
+    All['return'] = All['return'] * -1
     All.plot(lw=1)
-    png_name = 'Historical_{}'.format(show_ci)
-    png_path = r'C:\Users\a.acar\PycharmProjects\VaR\outputs\{}.png'.format(png_name)
+    png_name = '/Historical_{}.png'.format(show_ci)
+    png_path = VaR_png_output_path + png_name
     plt.savefig(png_path)
+
+####### BACKTEST ########
+
+c_i_backtest = 0.997
+p_i_backtest = 252
+data_backtest = [df for df, i in df_VaRs if
+                 i['confidence_interval'] == c_i_backtest and
+                 i['periodic_interval'] == p_i_backtest][0]
+
+backtest_df = pd.concat([data_backtest, df_returns], axis=1)
+
+backtest_df['loss_morethan_var_f'] = backtest_df.apply(lambda row: 1 if
+row['return'] < -1 * row['Historical_Simulation_252_0.997'] else 0, axis=1)
+
+print('toplam asim miktari : ', sum(backtest_df['loss_morethan_var_f']))
+
+days_of_loss_morethan_var = backtest_df.loc[backtest_df['loss_morethan_var_f'] == 1]
+
 
 '''
 IID OLMALARINI GOZ ONUNDE BULUNDUR. BIR ONCEKI 500 GUN VE BI SONRAKI IID ISE,BIRINDEN DIGERINI YORUMLAYABILIRIZ.
