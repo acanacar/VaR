@@ -69,13 +69,13 @@ data_backtest = [df for df, i in df_VaRs if
                  i['periodic_interval'] == p_i_backtest][0]
 
 backtest_df = pd.concat([data_backtest, portfolio_return], axis=1)
-backtest_df['next_day_return'] = backtest_df['return'].shift(-1)
-backtest_df['VaR_fail_flag'] = backtest_df.apply(
-    lambda row_: 1 if row_['next_day_return'] < -1 * row_['Historical_Simulation_252_0.997'] else 0, axis=1)
 
-print('toplam asim miktari : ', sum(backtest_df['VaR_fail_flag']))
+backtest_df['loss_morethan_var_f'] = backtest_df.apply(lambda row: 1 if
+row['return'] < -1 * row['Historical_Simulation_252_0.997'] else 0, axis=1)
 
-days_of_loss_morethan_var = backtest_df.loc[backtest_df['VaR_fail_flag'] == 1]
+print('toplam asim miktari : ', sum(backtest_df['loss_morethan_var_f']))
+
+days_of_loss_morethan_var = backtest_df.loc[backtest_df['loss_morethan_var_f'] == 1]
 
 '''
 IID OLMALARINI GOZ ONUNDE BULUNDUR. BIR ONCEKI 500 GUN VE BI SONRAKI IID ISE,BIRINDEN DIGERINI YORUMLAYABILIRIZ.
