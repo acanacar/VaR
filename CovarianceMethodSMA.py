@@ -9,7 +9,7 @@ data = store['/all']
 data.columns = data.columns.swaplevel(0, 1)
 
 log = 0
-lambda_decay = .5
+lambda_decay = .9
 
 period = 252
 time_scaler = 1
@@ -25,32 +25,42 @@ portfolio_return_series = daily_returns.dot(weights)
 portfolio_return_series_square = portfolio_return_series ** 2
 
 
-def graph_VaR(std, ret, value_var):
+def graph_VaR(std, ret, value_var,date):
     x = np.linspace(ret - 4 * std, \
                     ret + 4 * std, 100)
     plt.plot(x, mlab.normpdf(x, ret, std))
-    plt.title("Value At Risk")
+    weights_ = list(map(lambda x:'{:.0%}'.format(x),weights))
+    sec_weights_title = dict(zip(securities, weights_))
+    sec_weights_title = str(sec_weights_title).replace('{', '').replace('}', '').replace("'", '')
+    plt.title("VaR {}\n{}".format(date,sec_weights_title))
     plt.xlabel("Portfolio Return")
     # Plot the normal curve and label the x axis and the graph
 
     lower_limit = ret - 4 * std
     upper_limit = ret + 4 * std
     increment = (upper_limit - lower_limit) / 150
-    # Establish the lower and upper limit of our normal curve that we plan to plot
-    # Initialize an increment value for countless intervals inbetween
 
     height_at_critical = norm(ret, std).pdf(lower_limit)
     plt.plot((lower_limit, lower_limit), (0, height_at_critical), 'r')
 
+    #
+    xStart = lower_limit
+    xEnd = value_var
+    yEnd = norm(ret, std).pdf(value_var)
+    yStart = yEnd + 3
+    plt.annotate('{:6.4f}'.format(value_var),
+                 xytext=(xStart, yStart),
+                 xy=(xEnd, yEnd),
+                 arrowprops=dict(facecolor='red', shrink=0.01))
+    #
     for i in range(150):
         lower_limit += increment
         height_at_critical = norm(ret, std).pdf(lower_limit)
         if lower_limit < value_var:
             plt.plot((lower_limit, lower_limit), (0, height_at_critical), 'r')
         else:
-            plt.plot((lower_limit, lower_limit), (0, height_at_critical), 'b')
+            plt.plot((lower_limit, lower_limit), (0, height_at_critical), 'b', alpha=.4)
     return plt
-
 
 var_series = pd.Series(index=daily_returns.index, name='var_series')
 mean_series = pd.Series(index=daily_returns.index, name='mean_series')
@@ -73,22 +83,16 @@ for i in range(len(daily_returns) - period):
         lambda row_: (1 - lambda_decay) * (lambda_decay ** row_['Range']), axis=1)
     returns['scaled_weights'] = returns['weights'] / (1 - (lambda_decay ** period))
 
-    portfolio_variance = sum([row_.scaled_weights*(row_.portfolio_return - mean_return)**2 for row_ in returns.itertuples()])
+    portfolio_variance = sum([row_.scaled_weights*(row_.portfolio_return - portfolio_mean)**2 for row_ in returns.itertuples()])
+    portfolio_std_dev = portfolio_variance**.5
 
-
-    # returns['return_series_square'] = portfolio_return_series_square
-    # ewma_daily = sum(returns['scaled_weights'] * returns['return_series_square']) ** .5
-
-    var = norm(0, portfolio_variance ** .5).ppf(check_losses_at)
+    '''# burasinin uzerine dusunulebilir portfolio meani olarak 0 mi almaliyiz populasyon gibi dusunerek'''
+    # var = norm(0, portfolio_variance ** .5).ppf(check_losses_at)
     var = norm(portfolio_mean, portfolio_variance ** .5).ppf(check_losses_at)
 
-    # response = getValueAtRisk(data=returns)
-    # var = response[0]
-
     var_series[-i - 1] = var
-    mean_series[-i - 1] = portfolio_return
-    # covariance_matrix_series[-i - 1] = covariance_matrix
-    std_series[-i - 1] = ewma_daily
+    mean_series[-i - 1] = portfolio_mean
+    std_series[-i - 1] = portfolio_std_dev
 
     if log == 1:
         print("At the " + str(confidence * 100) + " percent level of confidence,\
@@ -107,17 +111,22 @@ n = 400
 row = daily_returns.iloc[n]
 p = graph_VaR(std=row.portfolio_std,
               ret=row.portfolio_mean,
-              value_var=row.portfolio_VaR)
+              value_var=row.portfolio_VaR,
+              date=row.name.strftime('%d-%m-%Y'))
+
 p.show()
 
+#
 backtest_df = daily_returns[['portfolio_VaR', 'next_day_return']] * -1
 ax = backtest_df.plot(lw=1)
 ax.set_ylim(0, backtest_df['next_day_return'].nlargest(2)[-1])
-ax.show()
+plt.show()
+#
 last_year_failure_amt = daily_returns['VaR_fail_flag'].rolling(window=252).sum()
 print('son 1 yildaki max fail miktari: ', int(last_year_failure_amt.max()))
 
 
+#
 def bins_labels(bins, **kwargs):
     bin_w = (max(bins) - min(bins)) / (len(bins) - 1)
     plt.xticks(np.arange(min(bins) + bin_w / 2, max(bins), bin_w), bins, **kwargs)
@@ -134,3 +143,4 @@ plt.title('last 1 year model fail amount durations (days)')
 bins_labels(bins, fontsize=20)
 plt.show()
 plt.close()
+#
