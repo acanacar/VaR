@@ -10,13 +10,13 @@ data.columns = data.columns.swaplevel(0, 1)
 
 log = 0
 lambda_decay = .9
-
+return_change = 'log' # 'pct'
 period = 252
 time_scaler = 1
 confidence = .99
 check_losses_at = 1 - confidence
 
-df, daily_returns = get_df(data=data, col='Adj Close')  # pct change
+df, daily_returns = get_df(data=data, col='Adj Close',change=return_change)  # pct change
 securities, weights = get_portfolio(data=df)
 weights = np.array(weights)
 
