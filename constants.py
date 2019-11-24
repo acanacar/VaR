@@ -11,6 +11,8 @@ from scipy.stats import norm
 if getpass.getuser()=='a.acar':
     hist_store = str(
         r'C:\Users\a.acar\PycharmProjects\VaR\sources\hist_data.h5')
+    hist_pkl = str(
+            r'C:\Users\a.acar\PycharmProjects\VaR\sources\hist_data.pkl')
 
     VaR_png_output_path = str(r"C:\Users\a.acar\PycharmProjects\VaR\outputs")
 
@@ -26,6 +28,8 @@ if getpass.getuser()=='root':
 
     hist_store = str(
         '/home/acanacar/Desktop/projects/pycharm/VaR/sources/hist_data.h5')
+    hist_pkl = str(
+            '/home/acanacar/Desktop/projects/pycharm/VaR/sources/hist_data.pkl')
 
     VaR_png_output_path = str(project_path/'outputs/')
 
