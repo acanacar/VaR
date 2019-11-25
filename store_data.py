@@ -37,7 +37,10 @@ for tahvil in tahvils:
     dframe = pd.read_csv(path, sep=';', decimal=',')
     dframe['Date'] = pd.to_datetime(dframe['Date'])
     dframe.set_index('Date', inplace=True)
+    print(tahvil)
+    print(dframe.head())
     df[tahvil] = dframe
 
+df.to_pickle(hist_pkl)
 with pd.HDFStore(hist_store) as store:
     store.put('all', df)
