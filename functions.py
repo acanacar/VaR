@@ -1,7 +1,6 @@
 from constants import *
 from scipy.stats import norm
 
-
 def get_df(data, col,change='pct'):
     df = data.iloc[:, data.columns.get_level_values(0) == col]
     df.columns = df.columns.droplevel()
