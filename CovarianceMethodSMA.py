@@ -3,16 +3,17 @@ from functions import *
 from scipy.stats import norm
 import matplotlib.mlab as mlab
 
-store = pd.HDFStore(hist_store)
-
-data = store['/all']
+# store = pd.HDFStore(hist_store)
+#
+# data = store['/all']
+data = pd.read_pickle(hist_pkl)
 data.columns = data.columns.swaplevel(0, 1)
 
 log = 0
-lambda_decay = .9
+lambda_decay = .7
 return_change = 'log' # 'pct'
 period = 252
-time_scaler = 1
+time_scaler = 20
 confidence = .99
 check_losses_at = 1 - confidence
 

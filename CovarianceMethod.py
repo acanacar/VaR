@@ -3,9 +3,11 @@ from functions import *
 from scipy.stats import norm
 import matplotlib.mlab as mlab
 
-store = pd.HDFStore(hist_store)
+# store = pd.HDFStore(hist_store)
 
-data = store['/all']
+
+# data = store['/all']
+data = pd.read_pickle(hist_pkl)
 data.columns = data.columns.swaplevel(0, 1)
 
 log = 0

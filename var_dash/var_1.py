@@ -64,24 +64,9 @@ def run_calc(stocks, price_type, calc_type, confidence_interval, period_interval
     return df_VaR
 
 
-app.layout = html.Div(children=[
-    html.Div(children='''
-    Symbol to graph
-    '''),
-    # dcc.Checklist(
-    #     id='symbol-dropdown',
-    #     options=[{'label': s, 'value': s} for s in data.columns.levels[0].values],
-    #     value=['AKBNK.IS']
-    # ),
-    # html.Div([html.H3('Enter start / end date:'),
-    #           dcc.DatePickerRange(id='my_date_picker',
-    #                               min_date_allowed=datetime(2015, 1, 1),
-    #                               max_date_allowed=datetime.today(),
-    #                               start_date=datetime(2018, 1, 1),
-    #                               end_date=datetime.today()
-    #                               )
-    #
-    #           ], style={'display': 'inline-block'}),
+app.layout = html.Div([
+
+
     html.Div([
         dcc.Dropdown(
             id='symbol-dropdown',
@@ -106,8 +91,9 @@ app.layout = html.Div(children=[
             value='pct',
             labelStyle={'display': 'inline-block'},
             style=style_1
-        ),
+        )]),
         # period
+    html.Div([
         dcc.Input(
             id='input-period',
             type='number',
