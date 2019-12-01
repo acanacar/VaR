@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> af8fe413ff8001e2e98e33c3bd93e01bab1c1f66
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -17,6 +21,7 @@ coolant_temps = deque(maxlen=max_length)
 rpms = deque(maxlen=max_length)
 speeds = deque(maxlen=max_length)
 throttle_pos = deque(maxlen=max_length)
+<<<<<<< HEAD
 
 data_dict = {"Oil Temperature": oil_temps,
              "Intake Temperature": intake_temps,
@@ -26,6 +31,16 @@ data_dict = {"Oil Temperature": oil_temps,
              "Throttle Position": throttle_pos}
 
 
+=======
+data_dict = {"Oil Temperature": oil_temps,
+             "Intake Temperature": intake_temps,
+             "Coolant Temperature": coolant_temps,
+             "RPM": rpms,
+             "Speed": speeds,
+             "Throttle Position": throttle_pos}
+
+
+>>>>>>> af8fe413ff8001e2e98e33c3bd93e01bab1c1f66
 def update_obd_values(times, oil_temps, intake_temps, coolant_temps, rpms, speeds, throttle_pos):
     times.append(time.time())
     if len(times) == 1:
@@ -38,15 +53,29 @@ def update_obd_values(times, oil_temps, intake_temps, coolant_temps, rpms, speed
         throttle_pos.append(random.randrange(10, 90))
     else:
         for data_of_interest in [oil_temps, intake_temps, coolant_temps, rpms, speeds, throttle_pos]:
+<<<<<<< HEAD
             data_of_interest.append(data_of_interest[-1] + data_of_interest[-1] * random.uniform(-0.0001, 0.0001))
+=======
+            data_of_interest.append(
+                data_of_interest[-1] + data_of_interest[-1] * random.uniform(-0.0001, 0.0001))
+>>>>>>> af8fe413ff8001e2e98e33c3bd93e01bab1c1f66
 
     return times, oil_temps, intake_temps, coolant_temps, rpms, speeds, throttle_pos
 
 
+<<<<<<< HEAD
 times, oil_temps, intake_temps, coolant_temps, rpms, speeds, throttle_pos = update_obd_values(times, oil_temps,
                                                                                               intake_temps,
                                                                                               coolant_temps, rpms,
                                                                                               speeds, throttle_pos)
+=======
+times, oil_temps, intake_temps, coolant_temps, rpms, speeds, throttle_pos = update_obd_values(times,
+                                                                                              oil_temps,
+                                                                                              intake_temps,
+                                                                                              coolant_temps,
+                                                                                              rpms, speeds,
+                                                                                              throttle_pos)
+>>>>>>> af8fe413ff8001e2e98e33c3bd93e01bab1c1f66
 
 app.layout = html.Div([
     html.Div([

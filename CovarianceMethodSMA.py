@@ -3,36 +3,39 @@ from functions import *
 from scipy.stats import norm
 import matplotlib.mlab as mlab
 
-store = pd.HDFStore(hist_store)
-
-data = store['/all']
+# store = pd.HDFStore(hist_store)
+#
+# data = store['/all']
+data = pd.read_pickle(hist_pkl)
 data.columns = data.columns.swaplevel(0, 1)
 
 log = 0
 lambda_decay = .9
-
+return_change = 'log'  # 'pct'
 period = 252
 time_scaler = 1
-confidence = .99
+confidence = .95
 check_losses_at = 1 - confidence
 
-df, daily_returns = get_df(data=data, col='Adj Close')  # pct change
+df, daily_returns = get_df(data=data, col='Adj Close', change=return_change)  # pct change
 securities, weights = get_portfolio(data=df)
 weights = np.array(weights)
+securities = ['TCELL.IS', 'ISCTR.IS', 'EURTRY=X', 'DOHOL.IS']
+weights = np.array([0.24042901, 0.10354615, 0.10769232, 0.54833252])
 
 daily_returns = daily_returns[securities]
 portfolio_return_series = daily_returns.dot(weights)
 portfolio_return_series_square = portfolio_return_series ** 2
 
 
-def graph_VaR(std, ret, value_var,date):
+def graph_VaR(std, ret, value_var, date):
     x = np.linspace(ret - 4 * std, \
                     ret + 4 * std, 100)
     plt.plot(x, mlab.normpdf(x, ret, std))
-    weights_ = list(map(lambda x:'{:.0%}'.format(x),weights))
+    weights_ = list(map(lambda x: '{:.0%}'.format(x), weights))
     sec_weights_title = dict(zip(securities, weights_))
     sec_weights_title = str(sec_weights_title).replace('{', '').replace('}', '').replace("'", '')
-    plt.title("VaR {}\n{}".format(date,sec_weights_title))
+    plt.title("VaR {}\n{}".format(date, sec_weights_title))
     plt.xlabel("Portfolio Return")
     # Plot the normal curve and label the x axis and the graph
 
@@ -62,6 +65,7 @@ def graph_VaR(std, ret, value_var,date):
             plt.plot((lower_limit, lower_limit), (0, height_at_critical), 'b', alpha=.4)
     return plt
 
+
 var_series = pd.Series(index=daily_returns.index, name='var_series')
 mean_series = pd.Series(index=daily_returns.index, name='mean_series')
 # covariance_matrix_series = pd.Series(index=daily_returns.index, name='cov_mat_series')
@@ -83,8 +87,9 @@ for i in range(len(daily_returns) - period):
         lambda row_: (1 - lambda_decay) * (lambda_decay ** row_['Range']), axis=1)
     returns['scaled_weights'] = returns['weights'] / (1 - (lambda_decay ** period))
 
-    portfolio_variance = sum([row_.scaled_weights*(row_.portfolio_return - portfolio_mean)**2 for row_ in returns.itertuples()])
-    portfolio_std_dev = portfolio_variance**.5
+    portfolio_variance = sum([row_.scaled_weights * (row_.portfolio_return - portfolio_mean) ** 2 for row_ in
+                              returns.itertuples()])
+    portfolio_std_dev = portfolio_variance ** .5
 
     '''# burasinin uzerine dusunulebilir portfolio meani olarak 0 mi almaliyiz populasyon gibi dusunerek'''
     # var = norm(0, portfolio_variance ** .5).ppf(check_losses_at)

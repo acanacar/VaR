@@ -1,15 +1,16 @@
 from constants import *
 from scipy.stats import norm
 
-
-def get_df(data, col):
+def get_df(data, col,change='pct'):
     df = data.iloc[:, data.columns.get_level_values(0) == col]
     df.columns = df.columns.droplevel()
 
     df = df.dropna(axis=1, how='all')
     df = df.dropna(axis=0, how='any')
-
-    returns = df.pct_change().iloc[1:]
+    if change == 'pct':
+        returns = df.pct_change().iloc[1:]
+    if change == 'log':
+        returns = np.log(df) - np.log(df.shift(1))
     returns.sort_index()
     return df, returns
 

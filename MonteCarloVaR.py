@@ -53,9 +53,11 @@ def VaR_MonteCarlo(prices, returns_, period, weights, predicted_days, Series=Fal
         return simulation_df, last_price
 
 
-store = pd.HDFStore(hist_store)
+# store = pd.HDFStore(hist_store)
 
-data = store['/all']
+# data = store['/all']
+data = pd.read_pickle(hist_pkl)
+
 data.columns = data.columns.swaplevel(0, 1)
 
 df, daily_returns = get_df(data=data, col='Adj Close')
