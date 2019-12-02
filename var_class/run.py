@@ -6,7 +6,7 @@ from var_class.var_1 import *
 data = pd.read_pickle(hist_pkl)
 
 #
-all_securities = list(data.columns.get_level_values(0))
+all_securities = set(data.columns.get_level_values(0))
 
 #
 n = 4
@@ -35,10 +35,13 @@ print('Annualized VaR(Percentage) - Approximation: ', d.var(Approximation=True) 
 print('Annualized VaR(Dollar) - Approximation: ', d.var(Approximation=True, marketValue=1000000))
 
 #
-d_historical = HistoricalVaR(.95, df.as_matrix(), portfolio_securities_weights)
+d_historical = HistoricalVaR(.95, df, portfolio_securities_weights)
+# d_historical = HistoricalVaR(.95, df.as_matrix(), portfolio_securities_weights)
 print('VaR(Percentage): ', d_historical.vaR(), '%')
 print('Var(Dollar):', d_historical.vaR(marketValue=1000000))
 print('100 day - VaR(Percentage): ', d_historical.vaR(window=100) * 100, '%')
 print('100 day - Var(Dollar):', d_historical.vaR(marketValue=1000000, window=100))
 
 #
+
+d_monte = MonteCarloVaR(.95, df, portfolio_securities_weights)
