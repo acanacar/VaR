@@ -38,6 +38,9 @@ class ValueAtRisk(object):
 
         self.portfolioReturn = np.dot(self.returnMatrix[-lookbackWindow:], self.weights)
 
+    def setHistoricalPortfolioReturns(self):
+        self.HistoricalPortfolioReturns = np.dot(self.returnMatrix, self.weights)
+
     def covMatrix(self):
         # variables are my securities,single obs of all variables must be each column of matrix
         # thats why we r transposing
@@ -80,8 +83,10 @@ class ValueAtRisk(object):
 
 
 class HistoricalVaR(ValueAtRisk):
-    def setHistoricalPortfolioReturns(self):
-        self.HistoricalPortfolioReturns = np.dot(self.returnMatrix, self.weights)
+    def __init__(self, interval, matrix, weights, return_method='log', lookbackWindow=252, hybrid=False):
+        self.hybrid = hybrid
+        super(HistoricalVaR, self).__init__(interval, matrix, weights, return_method='log',
+                                            lookbackWindow=252, )
 
     def getAgeWeightedVar(self, data):
         dx_data = {'portfolio_return': data, 'scaled_weights': self.scaledweights}
@@ -89,10 +94,10 @@ class HistoricalVaR(ValueAtRisk):
         dx = dx.sort_values(by=['portfolio_return'])
         dx['cum_scaled_weights'] = dx['scaled_weights'].cumsum()
         PercentageVaR = dx[dx['cum_scaled_weights'] > (1 - self.ci)].iloc[0].portfolio_return
-        return PercentageVaR
+        return abs(PercentageVaR)
 
-    def setVaRseries(self, lookbackWindow, hybrid):
-        if hybrid is False:
+    def setVaRseries(self, lookbackWindow):
+        if self.hybrid is False:
             ValueAtRisk = pd.Series(index=self.input_index, name='var_series')
             for i in range(0, len(self.returnMatrix) - lookbackWindow):
                 if i == 0:
@@ -102,7 +107,7 @@ class HistoricalVaR(ValueAtRisk):
                 ValueAtRisk[-i - 1] = abs(
                     np.percentile(current_portfolio_window, 100 * (1 - self.ci), interpolation='nearest'))
             self.VaR_Series = ValueAtRisk
-        if hybrid is True:
+        if self.hybrid is True:
             ValueAtRisk = pd.Series(index=self.input_index, name='var_series')
             for i in range(0, len(self.returnMatrix) - lookbackWindow):
                 if i == 0:
@@ -110,33 +115,25 @@ class HistoricalVaR(ValueAtRisk):
                 else:
                     current_portfolio_window = self.HistoricalPortfolioReturns[-(lookbackWindow + i):-i]
                 PercentageVaR = self.getAgeWeightedVar(data=current_portfolio_window)
-                # dx_data = {'portfolio_return': current_portfolio_window, 'scaled_weights': self.scaledweights}
-                # dx = pd.DataFrame(data=dx_data)
-                # dx = dx.sort_values(by=['portfolio_return'])
-                # dx['cum_scaled_weights'] = dx['scaled_weights'].cumsum()
-                # PercentageVaR = dx[dx['cum_scaled_weights'] > (1 - self.ci)].iloc[0].portfolio_return
+
                 ValueAtRisk[-i - 1] = PercentageVaR
             self.VaR_Series = ValueAtRisk
 
-    def vaR(self, marketValue=0, lookbackWindow=252, hybrid=False, lambda_decay=.9, series=False):
-        if hybrid is True:
+    def vaR(self, marketValue=0, lookbackWindow=252, lambda_decay=.9, series=False):
+        if self.hybrid is True:
             if series is False:
                 self.calculateScaledWeights(lookbackWindow, lambda_decay)
                 PercentageVaR = self.getAgeWeightedVar(data=self.portfolioReturn)
-                # dx_data = {'portfolio_return': self.portfolioReturn, 'scaled_weights': self.scaledweights}
-                # dx = pd.DataFrame(data=dx_data)
-                # dx = dx.sort_values(by=['portfolio_return'])
-                # dx['cum_scaled_weights'] = dx['scaled_weights'].cumsum()
-                # PercentageVaR = dx[dx['cum_scaled_weights'] > (1 - self.ci)].iloc[0].portfolio_return
+
             if series is True:
                 self.calculateScaledWeights(lookbackWindow, lambda_decay)
                 self.setHistoricalPortfolioReturns()
-                self.setVaRseries(lookbackWindow=lookbackWindow, hybrid=True)
+                self.setVaRseries(lookbackWindow=lookbackWindow)
                 if marketValue <= 0:
                     return self.VaR_Series
                 else:
                     return self.VaR_Series * marketValue
-        if hybrid is False:
+        if self.hybrid is False:
             if series is False:
                 PercentageVaR = abs(
                     np.percentile(self.portfolioReturn, 100 * (1 - self.ci), interpolation='nearest'))

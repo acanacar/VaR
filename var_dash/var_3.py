@@ -199,6 +199,14 @@ def get_vaR_instance(input_df, weights, method, calc_type, period_interval, conf
                           return_method=calc_type,
                           lookbackWindow=period_interval
                           )
+    elif method == 'Age-Weighted-Historical-Simulation':
+        d = HistoricalVaR(interval=confidence_interval,
+                          matrix=input_df,
+                          weights=weights,
+                          return_method=calc_type,
+                          lookbackWindow=period_interval,
+                          hybrid=True
+                          )
     elif method == 'Parametric':
         d = ValueAtRisk(interval=confidence_interval,
                         matrix=input_df,
@@ -237,7 +245,6 @@ def calculateVar(n_clicks, method, securities, calc_type, price_col, period_inte
     else:
         input_df = get_input_df(data=data, portfolio_securities=securities, price_col=price_col)
         weights = get_weights(n=len(securities))
-        print(weights)
         d = get_vaR_instance(input_df, weights, method,
                              calc_type, period_interval, confidence_interval)
         returns = get_returns(input_df, calc_type)
@@ -249,7 +256,6 @@ def calculateVar(n_clicks, method, securities, calc_type, price_col, period_inte
             g = get_var_graph(returns, period_interval)
             return [g, h]
         if series == 'True':
-            # var_series = get_var_series(returns, period_interval, confidence_interval)
             var_series = d.vaR(series=True)
             var_df = var_series[period_interval:].to_frame()
             var_df['time'] = var_df.index
