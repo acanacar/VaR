@@ -12,11 +12,13 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-style_markdown = {'fontSize': 16, 'margin-left': 'auto', 'padding': '2px 5px'}
+style_markdown = {'fontSize': 13, 'margin-top': '1px', 'margin-bottom': '1px', 'margin-left': 'auto',
+                  'padding': '0px 5px'}
 var_methods = [
     ('Basic Historical Simulation', 'Basic-Historical-Simulation'),
     ('Age Weighted Historical Simulation', 'Age-Weighted-Historical-Simulation'),
     ('Parametric', 'Parametric'),
+    ('Parametric EWMA', 'Parametric-EWMA'),
     ('Monte Carlo Simulation', 'Monte-Carlo-Simulation'),
 ]
 
@@ -93,6 +95,40 @@ app.layout = html.Div([
             placeholder='period interval',
             value=252
         ),
+
+        html.Hr(), dcc.Markdown(d("""
+            **Time Scaler**
+
+            """), style=style_markdown),
+        dcc.Input(
+            id='VaR-time-scaler',
+            type='number',
+            placeholder='period interval',
+            value=1
+        ),
+        html.Hr(), dcc.Markdown(d("""
+            **Number Of Simulations**
+
+            """), style=style_markdown),
+        dcc.Input(
+            id='VaR-num-simulations',
+            type='number',
+            placeholder='Monte Carlo Num Simulations',
+            value=1000,
+            min=1
+        ),
+        html.Hr(), dcc.Markdown(d("""
+            **Lambda Decay Factor**
+
+            """), style=style_markdown),
+        dcc.Input(
+            id='VaR-lambda-decay',
+            type='number',
+            placeholder='Lambda Decay Factor',
+            value=99,
+            min=1,
+            max=100
+        ),
         html.Hr(), dcc.Markdown(d(""" **Confidence Interval** """), style=style_markdown),
         dcc.RadioItems(
             id='VaR-confidence',
@@ -119,7 +155,7 @@ app.layout = html.Div([
              #     dcc.Graph(id='VaR-graph'), html.P(id='VaR-result', style={'color': 'red'})],
              style={'width': '60%', 'display': 'inline-block', 'padding': '0 20'})
 
-])
+], style={'display': 'flex'})
 
 
 def get_var_graph(returns, period_interval):
@@ -158,8 +194,42 @@ def get_var_portfolio(portfolio_returns, var_series):
             'data': traces,
             'layout': {
                 'height': 500,
-                'margin': {'l': 20, 'b': 30, 'r': 10, 't': 10},
-                'xaxis': {'showgrid': False}
+                'margin': {'l': 20, 'b': 30, 'r': 10, 't': 30},
+                'xaxis': {'showgrid': False},
+                'title': 'Backtest'
+            }
+        })
+
+
+def getDescription(fail, securities, weigths):
+    a = list(zip(securities, weigths))
+    d = ' '.join(str(k) + ': %' + '{0:.2f}'.format(v*100) for k, v in a)
+    return 'Fail:{} \n {}'.format(fail, d)
+
+
+def getDescriptionFalseSerie(securities, weigths):
+    a = list(zip(securities, weigths))
+    d = ' '.join(str(k) + ': %' + '{0:.2f}'.format(v*100) for k, v in a)
+    return '{}'.format(d)
+
+
+def getSimulationGraph(simulation_df):
+    traces = []
+    for col in simulation_df.columns:
+        traces.append(dict(
+            x=simulation_df.index,
+            y=simulation_df[col].values,
+            mode='lines',
+            name='simulations-{}'.format(col)
+        ))
+    return dcc.Graph(
+        id='monte-graph', figure={
+            'data': traces,
+            'layout': {
+                'height': 300,
+                'margin': {'l': 20, 'b': 30, 'r': 10, 't': 30},
+                'xaxis': {'showgrid': False},
+                'title': 'Monte Carlo Simulation'
             }
         })
 
@@ -190,7 +260,9 @@ def get_input_df(data, portfolio_securities, price_col):
     return df
 
 
-def get_vaR_instance(input_df, weights, method, calc_type, period_interval, confidence_interval):
+def get_vaR_instance(input_df, weights, method, calc_type, period_interval,
+                     time_scaler, num_simulations, lambda_decay,
+                     confidence_interval):
     if method == 'Basic-Historical-Simulation':
 
         d = HistoricalVaR(interval=confidence_interval,
@@ -205,20 +277,32 @@ def get_vaR_instance(input_df, weights, method, calc_type, period_interval, conf
                           weights=weights,
                           return_method=calc_type,
                           lookbackWindow=period_interval,
-                          hybrid=True
+                          hybrid=True,
+                          lambda_decay_hist=lambda_decay
                           )
     elif method == 'Parametric':
         d = ValueAtRisk(interval=confidence_interval,
                         matrix=input_df,
                         weights=weights,
                         return_method=calc_type,
-                        lookbackWindow=period_interval)
+                        lookbackWindow=period_interval,
+                        timeScaler=time_scaler)
+    elif method == 'Parametric-EWMA':
+        d = ValueAtRisk(interval=confidence_interval,
+                        matrix=input_df,
+                        weights=weights,
+                        return_method=calc_type,
+                        lookbackWindow=period_interval,
+                        timeScaler=time_scaler,
+                        sma=True,
+                        lambda_decay=lambda_decay)
     elif method == 'Monte-Carlo-Simulation':
         d = MonteCarloVaR(interval=confidence_interval,
                           matrix=input_df,
                           weights=weights,
                           return_method=calc_type,
-                          lookbackWindow=period_interval)
+                          lookbackWindow=period_interval,
+                          numSimulations=num_simulations)
     else:
         print('unvalid method')
     return d
@@ -235,34 +319,59 @@ def get_vaR_instance(input_df, weights, method, calc_type, period_interval, conf
         State(component_id='VaR-return-calculation-type', component_property='value'),
         State(component_id='VaR-price-column', component_property='value'),
         State(component_id='VaR-period', component_property='value'),
+        State(component_id='VaR-time-scaler', component_property='value'),
+        State(component_id='VaR-num-simulations', component_property='value'),
+        State(component_id='VaR-lambda-decay', component_property='value'),
         State(component_id='VaR-confidence', component_property='value'),
         State(component_id='VaR-series-option', component_property='value')
     ])
-def calculateVar(n_clicks, method, securities, calc_type, price_col, period_interval, confidence_interval,
-                 series):
+def calculateVar(n_clicks, method, securities, calc_type, price_col, period_interval, time_scaler,
+                 num_simulations,
+                 lambda_decay, confidence_interval, series):
     if n_clicks is None:
         raise PreventUpdate
     else:
         input_df = get_input_df(data=data, portfolio_securities=securities, price_col=price_col)
         weights = get_weights(n=len(securities))
         d = get_vaR_instance(input_df, weights, method,
-                             calc_type, period_interval, confidence_interval)
+                             calc_type, period_interval, time_scaler, num_simulations, lambda_decay / 100,
+                             confidence_interval)
         returns = get_returns(input_df, calc_type)
         returns['portfolio_return'] = returns.dot(weights)
         if series == 'False':
             Value_at_Risk = d.vaR()
-            _ = 'Value at Risk of Portfolio = {}'.format(Value_at_Risk)
-            h = html.P(children=_, id='VaR-result', style={'color': 'red'})
+            _ = 'Value at Risk of Portfolio = {0:.3f}'.format(Value_at_Risk)
+            h = html.Div(html.P(children=_, id='VaR-result', style={'color': 'red',
+                                                                    'border':'1px solid black',
+                                                                    'width':'33%'}))
             g = get_var_graph(returns, period_interval)
-            return [g, h]
+            d = getDescriptionFalseSerie(securities, d.weights)
+            # if method == 'Monte-Carlo-Simulation':
+            #     x = getSimulationGraph(simulation_df=d.simulation_df)
+            #     return [g,h,x]
+            return [d, g, h]
         if series == 'True':
             var_series = d.vaR(series=True)
+            print('var_series')
+            print(var_series)
             var_df = var_series[period_interval:].to_frame()
             var_df['time'] = var_df.index
             var_df = var_df[['time', 'var_series']]
+            next_return_col = 'next_{}_day_return'.format(time_scaler)
+            returns[next_return_col] = returns['portfolio_return'].shift(
+                -time_scaler)
+            print('return_series')
+            print(returns)
+            backtest_df = pd.concat([var_series, returns[next_return_col]], axis=1)
+            backtest_df['VaR_fail_flag'] = backtest_df.apply(
+                lambda row_: 1 if row_[next_return_col] < -1 * row_[
+                    'var_series'] else 0, axis=1)
+            print('toplam asim miktari : ', sum(backtest_df['VaR_fail_flag']))
+            asim = sum(backtest_df['VaR_fail_flag'])
             v = generate_table(var_df, max_rows=10)
-            g = get_var_portfolio(returns['portfolio_return'], var_series)
-            return [g, v]
+            g = get_var_portfolio(returns[next_return_col], var_series)
+            t = getDescription(fail=asim, securities=securities, weigths=d.weights)
+            return [t, g, v]
 
 
 if __name__ == '__main__':
