@@ -61,6 +61,8 @@ class ValueAtRisk(object):
 
     def getParametricEWMAVaR(self):
         return abs(norm.ppf(self.ci) * np.sqrt(self.variance)) * math.sqrt(self.timescaler)
+    def getParametricEWMAVaRSeries(self, para_ewma_variance, para_mean=0):
+        return abs(norm.ppf(self.ci) * np.sqrt(para_ewma_variance)) * math.sqrt(self.timescaler)
 
     def getParametricVaR(self, para_variance, para_mean=0):
         return abs(norm.ppf(self.ci) * np.sqrt(para_variance)) * math.sqrt(self.timescaler)
@@ -85,21 +87,31 @@ class ValueAtRisk(object):
                     return np.dot(np.dot(self.weights, cov_mat), self.weights.T)
 
             if self.sma is True:
-                self.calculateScaledWeights(lookbackWindow, lambda_decay)
-                # self.portfolioReturn = np.dot(self.returnMatrix[-lookbackWindow:], self.weights)
-                self.variance = np.dot(self.portfolioReturn, self.scaledweights)
-        return self.variance
+                if series is False:
+                    self.calculateScaledWeights(lookbackWindow)
+                    # self.portfolioReturn = np.dot(self.returnMatrix[-lookbackWindow:], self.weights)
+                    self.variance = np.dot(self.portfolioReturn, self.scaledweights)
+
+            return self.variance
 
     def setVarSeries(self, lookbackWindow):
         ValueAtRisk = pd.Series(index=self.input_index, name='var_series')
+        if self.sma is True:
+            self.calculateScaledWeights(lookbackWindow)
         for i in range(0, len(self.returnMatrix) - lookbackWindow):
             if i == 0:
                 current_portfolio_window = self.HistoricalPortfolioReturns[-lookbackWindow:]
             else:
                 current_portfolio_window = self.HistoricalPortfolioReturns[-(lookbackWindow + i):-i]
-            para_variance = self.calculateVariance(series=True, parametricInput=current_portfolio_window)
-            para_vaR = self.getParametricVaR(para_variance, self.timescaler)
-            ValueAtRisk[-i - 1] = para_vaR
+            if self.sma is False:
+                para_variance = self.calculateVariance(series=True, parametricInput=current_portfolio_window)
+                para_vaR = self.getParametricVaR(para_variance, self.timescaler)
+                ValueAtRisk[-i - 1] = para_vaR
+            if self.sma is True:
+                para_ewma_variance = np.dot(current_portfolio_window, self.scaledweights)
+                para_ewma_vaR = self.getParametricEWMAVaRSeries(para_ewma_variance)
+                ValueAtRisk[-i - 1] = para_ewma_vaR
+
         self.VaR_Series = ValueAtRisk
 
     def vaR(self, marketValue=0, Approximation=False, lookbackWindow=252,
