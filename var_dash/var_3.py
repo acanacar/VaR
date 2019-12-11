@@ -14,6 +14,7 @@ from dash.exceptions import PreventUpdate
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 style_markdown = {'fontSize': 13, 'margin-top': '1px', 'margin-bottom': '1px', 'margin-left': 'auto',
                   'padding': '0px 5px'}
+stylehr={'margin-top':'2px','margin-bottom':'2px'}
 var_methods = [
     ('Basic Historical Simulation', 'Basic-Historical-Simulation'),
     ('Age Weighted Historical Simulation', 'Age-Weighted-Historical-Simulation'),
@@ -63,7 +64,7 @@ app.layout = html.Div([
                 options=[{'label': s, 'value': s} for s in data.columns.levels[0].values],
                 value=['AKBNK.IS', 'GARAN.IS'],
                 multi=True)], style={'width': '100%'}),
-        html.Hr(),
+        html.Hr(style=stylehr),
         html.Div([
             dcc.Markdown(d(""" **Value at Risk Method** """), style=style_markdown),
             dcc.Dropdown(
@@ -71,21 +72,21 @@ app.layout = html.Div([
                 options=[{'label': l, 'value': v} for l, v in var_methods],
                 value='Basic-Historical-Simulation'
             )], style={'width': '50%'}),
-        html.Hr(), dcc.Markdown(d(""" **Return Calculation Method** """), style=style_markdown),
+        html.Hr(style=stylehr), dcc.Markdown(d(""" **Return Calculation Method** """), style=style_markdown),
         dcc.RadioItems(
             id='VaR-return-calculation-type',
             options=[{'label': l, 'value': v} for l, v in [('Percentage', 'pct'), ('Log', 'log')]],
             value='pct',
             labelStyle={'display': 'inline-block'}
         ),
-        html.Hr(), dcc.Markdown(d(""" **Price Column** """), style=style_markdown),
+        html.Hr(style=stylehr), dcc.Markdown(d(""" **Price Column** """), style=style_markdown),
         dcc.RadioItems(
             id='VaR-price-column',
             options=[{'label': i, 'value': i} for i in ['Close', 'Adj Close']],
             value='Adj Close',
             labelStyle={'display': 'inline-block'}
         ),
-        html.Hr(), dcc.Markdown(d("""
+        html.Hr(style=stylehr), dcc.Markdown(d("""
             **Period Interval**
 
             """), style=style_markdown),
@@ -96,7 +97,7 @@ app.layout = html.Div([
             value=252
         ),
 
-        html.Hr(), dcc.Markdown(d("""
+        html.Hr(style=stylehr), dcc.Markdown(d("""
             **Time Scaler**
 
             """), style=style_markdown),
@@ -106,7 +107,7 @@ app.layout = html.Div([
             placeholder='period interval',
             value=1
         ),
-        html.Hr(), dcc.Markdown(d("""
+        html.Hr(style=stylehr), dcc.Markdown(d("""
             **Number Of Simulations**
 
             """), style=style_markdown),
@@ -117,7 +118,7 @@ app.layout = html.Div([
             value=1000,
             min=1
         ),
-        html.Hr(), dcc.Markdown(d("""
+        html.Hr(style=stylehr), dcc.Markdown(d("""
             **Lambda Decay Factor**
 
             """), style=style_markdown),
@@ -129,7 +130,7 @@ app.layout = html.Div([
             min=1,
             max=100
         ),
-        html.Hr(), dcc.Markdown(d(""" **Confidence Interval** """), style=style_markdown),
+        html.Hr(style=stylehr), dcc.Markdown(d(""" **Confidence Interval** """), style=style_markdown),
         dcc.RadioItems(
             id='VaR-confidence',
             options=[
@@ -140,7 +141,7 @@ app.layout = html.Div([
             value=.99,
             labelStyle={'display': 'inline-block'},
         ),
-        html.Hr(), dcc.Markdown(d(""" **Series T/F** """), style=style_markdown),
+        html.Hr(style=stylehr), dcc.Markdown(d(""" **Series T/F** """), style=style_markdown),
         dcc.RadioItems(
             id='VaR-series-option',
             options=[{'label': i, 'value': i} for i in ['True', 'False']],

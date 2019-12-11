@@ -85,7 +85,7 @@ class ValueAtRisk(object):
                     return np.dot(np.dot(self.weights, cov_mat), self.weights.T)
 
             if self.sma is True:
-                self.calculateScaledWeights(lookbackWindow, lambda_decay)
+                self.calculateScaledWeights(lookbackWindow)
                 # self.portfolioReturn = np.dot(self.returnMatrix[-lookbackWindow:], self.weights)
                 self.variance = np.dot(self.portfolioReturn, self.scaledweights)
         return self.variance
@@ -141,12 +141,14 @@ class HistoricalVaR(ValueAtRisk):
         dx['cum_scaled_weights'] = dx['scaled_weights'].cumsum()
         PercentageVaR = dx[dx['cum_scaled_weights'] > (1 - self.ci)].iloc[0].portfolio_return
         return abs(PercentageVaR)
-    def calculateScaledWeightsHist(self, lookbackWindow,lambda_decay):
+
+    def calculateScaledWeightsHist(self, lookbackWindow, lambda_decay):
         print(lambda_decay)
         Range = np.array(range(lookbackWindow))
         Range[:] = Range[::-1]
         sma_weights = (1 - lambda_decay) * (lambda_decay ** Range)
         self.scaledweights = sma_weights / (1 - (lambda_decay ** lookbackWindow))
+
     def setVaRseries(self, lookbackWindow):
         if self.hybrid is False:
             ValueAtRisk = pd.Series(index=self.input_index, name='var_series')
@@ -175,11 +177,11 @@ class HistoricalVaR(ValueAtRisk):
     def vaR(self, marketValue=0, lookbackWindow=252, lambda_decay=.9, series=False):
         if self.hybrid is True:
             if series is False:
-                self.calculateScaledWeightsHist(lookbackWindow,self.lambda_decay_hist)
+                self.calculateScaledWeightsHist(lookbackWindow, self.lambda_decay_hist)
                 PercentageVaR = self.getAgeWeightedVar(data=self.portfolioReturn)
 
             if series is True:
-                self.calculateScaledWeightsHist(lookbackWindow,self.lambda_decay_hist)
+                self.calculateScaledWeightsHist(lookbackWindow, self.lambda_decay_hist)
                 self.setHistoricalPortfolioReturns()
                 self.setVaRseries(lookbackWindow=lookbackWindow)
                 if marketValue <= 0:
