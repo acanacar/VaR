@@ -1,6 +1,6 @@
-from functions import *
+from var_prod.constants import *
 from textwrap import dedent as d
-from var_class.var_1 import *
+from var_prod.var_class import *
 
 data = pd.read_pickle(hist_pkl)
 import dash
