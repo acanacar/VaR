@@ -3,11 +3,21 @@ import numpy as np
 from scipy.stats import norm
 import math
 
+# class ValueAtRiskFactory:
+#     @staticmethod
+#     def createObjectFromParameters(**kwargs):
+#         for k,v in kwargs.items():
+
 
 class ValueAtRisk(object):
     def __init__(self, interval, matrix, weights, return_method='log', lookbackWindow=252, timeScaler=1,
                  sma=False, lambda_decay=.99):
-        if (interval > 0 and interval < 1):
+        self.timescaler = timeScaler
+        self.sma = sma
+        # self.lookbackWindow = lookbackWindow
+        self.lambda_decay = lambda_decay
+        self.input = matrix
+        if interval > 0 and interval < 1:
             self.ci = interval
         else:
             raise Exception("Invalid confidence interval", interval)
@@ -21,11 +31,6 @@ class ValueAtRisk(object):
 
         if len(weights) != matrix.shape[1]:
             raise Exception("Weights Length doesn't match")
-        self.timescaler = timeScaler
-        self.sma = sma
-        # self.lookbackWindow = lookbackWindow
-        self.lambda_decay = lambda_decay
-        self.input = matrix
 
         if return_method == 'log':
             self.returnMatrix = np.diff(np.log(self.input), axis=0)
@@ -61,6 +66,7 @@ class ValueAtRisk(object):
 
     def getParametricEWMAVaR(self):
         return abs(norm.ppf(self.ci) * np.sqrt(self.variance)) * math.sqrt(self.timescaler)
+
     def getParametricEWMAVaRSeries(self, para_ewma_variance, para_mean=0):
         return abs(norm.ppf(self.ci) * np.sqrt(para_ewma_variance)) * math.sqrt(self.timescaler)
 
@@ -136,6 +142,10 @@ class ValueAtRisk(object):
             else:
                 return self.VaR_Series * marketValue
 
+class ParametricVaR(ValueAtRisk):
+    def __init__(self, interval, matrix, weights, return_method='log', lookbackWindow=252, timeScaler=1,
+                 sma=False, lambda_decay=.99):
+        super().__init__(interval,)
 
 class HistoricalVaR(ValueAtRisk):
     def __init__(self, interval, matrix, weights, return_method='log', lookbackWindow=252,
@@ -153,12 +163,14 @@ class HistoricalVaR(ValueAtRisk):
         dx['cum_scaled_weights'] = dx['scaled_weights'].cumsum()
         PercentageVaR = dx[dx['cum_scaled_weights'] > (1 - self.ci)].iloc[0].portfolio_return
         return abs(PercentageVaR)
-    def calculateScaledWeightsHist(self, lookbackWindow,lambda_decay):
+
+    def calculateScaledWeightsHist(self, lookbackWindow, lambda_decay):
         print(lambda_decay)
         Range = np.array(range(lookbackWindow))
         Range[:] = Range[::-1]
         sma_weights = (1 - lambda_decay) * (lambda_decay ** Range)
         self.scaledweights = sma_weights / (1 - (lambda_decay ** lookbackWindow))
+
     def setVaRseries(self, lookbackWindow):
         if self.hybrid is False:
             ValueAtRisk = pd.Series(index=self.input_index, name='var_series')
@@ -187,11 +199,11 @@ class HistoricalVaR(ValueAtRisk):
     def vaR(self, marketValue=0, lookbackWindow=252, lambda_decay=.9, series=False):
         if self.hybrid is True:
             if series is False:
-                self.calculateScaledWeightsHist(lookbackWindow,self.lambda_decay_hist)
+                self.calculateScaledWeightsHist(lookbackWindow, self.lambda_decay_hist)
                 PercentageVaR = self.getAgeWeightedVar(data=self.portfolioReturn)
 
             if series is True:
-                self.calculateScaledWeightsHist(lookbackWindow,self.lambda_decay_hist)
+                self.calculateScaledWeightsHist(lookbackWindow, self.lambda_decay_hist)
                 self.setHistoricalPortfolioReturns()
                 self.setVaRseries(lookbackWindow=lookbackWindow)
                 if marketValue <= 0:

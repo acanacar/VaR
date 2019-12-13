@@ -45,3 +45,52 @@ print('100 day - Var(Dollar):', d_historical.vaR(marketValue=1000000, window=100
 #
 
 d_monte = MonteCarloVaR(.95, df, portfolio_securities_weights)
+
+num_simulations = 10000
+time_scaler = 1
+calc_type= 'log'
+period_interval = 252
+confidence_interval = .95
+price_col = 'Adj Close'
+lambda_decay = .98
+
+input_df = data.loc[:, (portfolio_securities, price_col)]
+input_df.columns = input_df.columns.droplevel(1)
+input_df = input_df.dropna(axis=1, how='all').dropna(axis=0, how='any')
+
+
+d = HistoricalVaR(interval=confidence_interval,
+                  matrix=input_df,
+                  weights=portfolio_securities_weights,
+                  return_method=calc_type,
+                  lookbackWindow=period_interval
+                  )
+d = HistoricalVaR(interval=confidence_interval,
+                  matrix=input_df,
+                  weights=portfolio_securities_weights,
+                  return_method=calc_type,
+                  lookbackWindow=period_interval,
+                  hybrid=True,
+                  lambda_decay_hist=lambda_decay
+                  )
+d = ValueAtRisk(interval=confidence_interval,
+                matrix=input_df,
+                weights=portfolio_securities_weights,
+                return_method=calc_type,
+                lookbackWindow=period_interval,
+                timeScaler=time_scaler)
+d = ValueAtRisk(interval=confidence_interval,
+                matrix=input_df,
+                weights=portfolio_securities_weights,
+                return_method=calc_type,
+                lookbackWindow=period_interval,
+                timeScaler=time_scaler,
+                sma=True,
+                lambda_decay=lambda_decay)
+
+d = MonteCarloVaR(interval=confidence_interval,
+                  matrix=input_df,
+                  weights=portfolio_securities_weights,
+                  return_method=calc_type,
+                  lookbackWindow=period_interval,
+                  numSimulations=num_simulations)
