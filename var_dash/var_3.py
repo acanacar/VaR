@@ -1,5 +1,3 @@
-from constants import *
-from datetime import datetime
 from functions import *
 from textwrap import dedent as d
 from var_class.var_1 import *
