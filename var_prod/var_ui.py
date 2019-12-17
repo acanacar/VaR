@@ -366,7 +366,7 @@ def calculateVar(n_clicks, method, securities, calc_type, price_col, period_inte
         if series == 'True':
             d.vaRSeries()
             d.createBacktestDf()
-            graph_backtest = createBacktestGraph(d.backtestDf['realized_return'], d.backtestDf['VaR'])
+            graph_backtest = createBacktestGraph(-1 * d.backtestDf['realized_return'], d.backtestDf['VaR'])
             v = generate_table_(d, max_rows=10)
 
             return [None, graph_backtest, v]

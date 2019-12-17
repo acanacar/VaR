@@ -1,3 +1,6 @@
+# individual bar eklenebilir
+# risk free rate kullanarak sharpe ratio hesabi
+# C:\Users\a.acar\PycharmProjects\VaR\sources\ExcelModelingofPortfolioVariance.xls
 import pandas as pd
 import numpy as np
 from scipy.stats import norm
@@ -69,7 +72,7 @@ class ValueAtRisk(object):
         #     backtest_df[actual_return_col] = backtest_df['PortfolioReturn'].shift(-self.timeScaler)
         # else:
         #     backtest_df[actual_return_col] = backtest_df['PortfolioReturn'].shift(-1)
-        if hasattr(self,'timeScaler'):
+        if hasattr(self, 'timeScaler'):
             backtest_df['realized_return'] = backtest_df['PortfolioReturn'].shift(-self.timeScaler)
         else:
             backtest_df['realized_return'] = backtest_df['PortfolioReturn'].shift(-1)
@@ -83,11 +86,21 @@ class ParametricVaR(ValueAtRisk):
     def __init__(self, interval, matrix, weights, return_method, lookbackWindow, timeScaler):
         super().__init__(interval, matrix, weights, return_method, lookbackWindow)
         self.timescaler = timeScaler
-
+    def getBeta(self):
+        marketvalue = 1000
+        asset_values = np.dot(self.weights,marketvalue)
+        cov_mat = self.getCovarianceMatrix(self.returnMatrix[-self.lookbackWindow:])
+        variances = np.diag(cov_mat)
+        portfolio_variance = self.get_variance(cov_mat)
+        beta = marketvalue * np.dot(cov_mat,asset_values) / portfolio_variance
+        dollar_covariance = np.dot(cov_mat,self.weights.T)
+        beta * self.ValueAtRisk/marketvalue
     def getCovarianceMatrix(self, current_portfolio_window):
+        # diagonal std matrice x correlation matrice x diagonal std matrice
         return np.cov(current_portfolio_window.T)
 
     def get_variance(self, cov_mat):
+        # weights matrice x covariance matrice x transposed weights matrice
         return np.dot(np.dot(self.weights, cov_mat), self.weights.T)
 
     def get_vaR_value(self, variance):
@@ -118,7 +131,7 @@ class ParametricVaR(ValueAtRisk):
 class ParametricVaREwma(ParametricVaR):
     def __init__(self, interval, matrix, weights, return_method, lookbackWindow, timeScaler, lambdaDecay):
         super().__init__(interval, matrix, weights, return_method, lookbackWindow, timeScaler)
-        self.lambda_decay = lambdaDecay
+        self.lambdaDecay = lambdaDecay
         self.timescaler = timeScaler
         self.calculateScaledWeights()
 
@@ -164,8 +177,8 @@ class HistoricalVaR(ValueAtRisk):
 class AgeWeightedHistoricalVaR(HistoricalVaR):
     def __init__(self, interval, matrix, weights, return_method, lookbackWindow, lambdaDecay):
         super().__init__(interval, matrix, weights, return_method, lookbackWindow)
+        self.lambdaDecay = lambdaDecay
         self.calculateScaledWeights()
-        self.lambda_decay = lambdaDecay
 
     def get_var_value(self, data):
         dx_data = {'portfolio_return': data, 'scaled_weights': self.scaledweights}
@@ -190,12 +203,12 @@ class AgeWeightedHistoricalVaR(HistoricalVaR):
 
 
 class MonteCarloVaR(ValueAtRisk):
-    def __init__(self, interval, matrix, weights, return_method, lookbackWindow,
-                 numSimulations=1000):
+    def __init__(self, interval, matrix, weights, return_method,
+                 lookbackWindow, timeScaler=1, numSimulations=1000):
+        self.timeScaler = timeScaler
         self.numSimulations = numSimulations
 
-        super(MonteCarloVaR, self).__init__(interval, matrix, weights, return_method='log',
-                                            lookbackWindow=252, lambda_decay=.99, timeScaler=1)
+        super().__init__(interval, matrix, weights, return_method, lookbackWindow)
 
     def setPortfolioPrices(self):
         self.portfolioPrices = np.dot(self.input, self.weights.T)
@@ -234,9 +247,9 @@ class MonteCarloVaR(ValueAtRisk):
         self.last_price = last_price
         self.simulated_price = np.percentile(simulation_df.iloc[-1, :], 100 * (1 - self.ci))
 
-    def vaR(self, marketValue=0, lookbackWindow=252, predictedDays=1):
+    def vaR(self):
         self.setPortfolioPrices()
-        self.calculateStdMean(lookbackWindow=lookbackWindow)
+        self.calculateStdMean(lookbackWindow=self.lookbackWindow)
         self.simulate(predictedDays=self.timescaler)
 
         return abs((self.simulated_price - self.last_price) / self.last_price)
