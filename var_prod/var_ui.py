@@ -12,6 +12,8 @@ from dash.exceptions import PreventUpdate
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 style_markdown = {'fontSize': 13, 'margin-top': '1px', 'margin-bottom': '1px', 'margin-left': 'auto',
                   'padding': '0px 5px'}
+stylehr = {'margin-top': '2px', 'margin-bottom': '2px'}
+
 var_methods = [
     ('Basic Historical Simulation', 'Basic-Historical-Simulation'),
     ('Age Weighted Historical Simulation', 'Age-Weighted-Historical-Simulation'),
@@ -40,6 +42,23 @@ def generate_table(dataframe, max_rows=10):
     )
 
 
+def generate_table_(VaR_instance, max_rows=10):
+    dataframe = VaR_instance.backtestDf
+    return html.Table(
+        # Header
+        [html.Tr([html.Th('VaR')])] +
+
+        # Body
+        [
+            html.Tr(
+                [
+                    html.Td(dataframe.iloc[-i].name), html.Td(dataframe.iloc[-i]['VaR']),
+                ]
+            ) for i in range(min(len(dataframe), max_rows))
+        ]
+    )
+
+
 def get_returns(data, calc_type):
     if calc_type == 'pct':
         returns = data.pct_change().iloc[1:]
@@ -61,7 +80,7 @@ app.layout = html.Div([
                 options=[{'label': s, 'value': s} for s in data.columns.levels[0].values],
                 value=['AKBNK.IS', 'GARAN.IS'],
                 multi=True)], style={'width': '100%'}),
-        html.Hr(),
+        html.Hr(style=stylehr),
         html.Div([
             dcc.Markdown(d(""" **Value at Risk Method** """), style=style_markdown),
             dcc.Dropdown(
@@ -69,21 +88,21 @@ app.layout = html.Div([
                 options=[{'label': l, 'value': v} for l, v in var_methods],
                 value='Basic-Historical-Simulation'
             )], style={'width': '50%'}),
-        html.Hr(), dcc.Markdown(d(""" **Return Calculation Method** """), style=style_markdown),
+        html.Hr(style=stylehr), dcc.Markdown(d(""" **Return Calculation Method** """), style=style_markdown),
         dcc.RadioItems(
             id='VaR-return-calculation-type',
             options=[{'label': l, 'value': v} for l, v in [('Percentage', 'pct'), ('Log', 'log')]],
             value='pct',
             labelStyle={'display': 'inline-block'}
         ),
-        html.Hr(), dcc.Markdown(d(""" **Price Column** """), style=style_markdown),
+        html.Hr(style=stylehr), dcc.Markdown(d(""" **Price Column** """), style=style_markdown),
         dcc.RadioItems(
             id='VaR-price-column',
             options=[{'label': i, 'value': i} for i in ['Close', 'Adj Close']],
             value='Adj Close',
             labelStyle={'display': 'inline-block'}
         ),
-        html.Hr(), dcc.Markdown(d("""
+        html.Hr(style=stylehr), dcc.Markdown(d("""
             **Period Interval**
 
             """), style=style_markdown),
@@ -94,7 +113,7 @@ app.layout = html.Div([
             value=252
         ),
 
-        html.Hr(), dcc.Markdown(d("""
+        html.Hr(style=stylehr), dcc.Markdown(d("""
             **Time Scaler**
 
             """), style=style_markdown),
@@ -104,7 +123,7 @@ app.layout = html.Div([
             placeholder='period interval',
             value=1
         ),
-        html.Hr(), dcc.Markdown(d("""
+        html.Hr(style=stylehr), dcc.Markdown(d("""
             **Number Of Simulations**
 
             """), style=style_markdown),
@@ -115,7 +134,7 @@ app.layout = html.Div([
             value=1000,
             min=1
         ),
-        html.Hr(), dcc.Markdown(d("""
+        html.Hr(style=stylehr), dcc.Markdown(d("""
             **Lambda Decay Factor**
 
             """), style=style_markdown),
@@ -127,7 +146,7 @@ app.layout = html.Div([
             min=1,
             max=100
         ),
-        html.Hr(), dcc.Markdown(d(""" **Confidence Interval** """), style=style_markdown),
+        html.Hr(style=stylehr), dcc.Markdown(d(""" **Confidence Interval** """), style=style_markdown),
         dcc.RadioItems(
             id='VaR-confidence',
             options=[
@@ -138,7 +157,7 @@ app.layout = html.Div([
             value=.99,
             labelStyle={'display': 'inline-block'},
         ),
-        html.Hr(), dcc.Markdown(d(""" **Series T/F** """), style=style_markdown),
+        html.Hr(style=stylehr), dcc.Markdown(d(""" **Series T/F** """), style=style_markdown),
         dcc.RadioItems(
             id='VaR-series-option',
             options=[{'label': i, 'value': i} for i in ['True', 'False']],
@@ -178,7 +197,7 @@ def get_var_graph(returns, period_interval):
         })
 
 
-def get_var_portfolio(portfolio_returns, var_series):
+def createBacktestGraph(portfolio_returns, var_series):
     traces = []
     for data in [portfolio_returns, var_series]:
         traces.append(dict(
@@ -261,8 +280,8 @@ def get_input_df(data, portfolio_securities, price_col):
 def get_vaR_instance(input_df, weights, method, calc_type, period_interval,
                      time_scaler, num_simulations, lambda_decay,
                      confidence_interval):
+    print(locals())
     if method == 'Basic-Historical-Simulation':
-        print(confidence_interval)
         d = HistoricalVaR(interval=confidence_interval,
                           matrix=input_df,
                           weights=weights,
@@ -330,12 +349,11 @@ def calculateVar(n_clicks, method, securities, calc_type, price_col, period_inte
         d = get_vaR_instance(input_df, weights, method,
                              calc_type, period_interval, time_scaler, num_simulations, lambda_decay / 100,
                              confidence_interval)
-        print(d)
         returns = get_returns(input_df, calc_type)
         returns['portfolio_return'] = returns.dot(weights)
         if series == 'False':
-            Value_at_Risk = d.vaR()
-            _ = 'Value at Risk of Portfolio = {0:.3f}'.format(Value_at_Risk)
+            d.vaR()
+            _ = 'Value at Risk of Portfolio = {0:.3f}'.format(d.ValueAtRisk)
             h = html.Div(html.P(children=_, id='VaR-result', style={'color': 'red',
                                                                     'border': '1px solid black',
                                                                     'width': '33%'}))
@@ -346,27 +364,12 @@ def calculateVar(n_clicks, method, securities, calc_type, price_col, period_inte
             #     return [g,h,x]
             return [d, g, h]
         if series == 'True':
-            var_series = d.vaR(series=True)
-            print('var_series')
-            print(var_series)
-            var_df = var_series[period_interval:].to_frame()
-            var_df['time'] = var_df.index
-            var_df = var_df[['time', 'var_series']]
-            next_return_col = 'next_{}_day_return'.format(time_scaler)
-            returns[next_return_col] = returns['portfolio_return'].shift(
-                -time_scaler)
-            print('return_series')
-            print(returns)
-            backtest_df = pd.concat([var_series, returns[next_return_col]], axis=1)
-            backtest_df['VaR_fail_flag'] = backtest_df.apply(
-                lambda row_: 1 if row_[next_return_col] < -1 * row_[
-                    'var_series'] else 0, axis=1)
-            print('toplam asim miktari : ', sum(backtest_df['VaR_fail_flag']))
-            asim = sum(backtest_df['VaR_fail_flag'])
-            v = generate_table(var_df, max_rows=10)
-            g = get_var_portfolio(returns[next_return_col], var_series)
-            t = getDescription(fail=asim, securities=securities, weigths=d.weights)
-            return [t, g, v]
+            d.vaRSeries()
+            d.createBacktestDf()
+            graph_backtest = createBacktestGraph(d.backtestDf['realized_return'], d.backtestDf['VaR'])
+            v = generate_table_(d, max_rows=10)
+
+            return [None, graph_backtest, v]
 
 
 if __name__ == '__main__':

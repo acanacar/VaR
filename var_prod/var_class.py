@@ -11,10 +11,8 @@ import math
 
 
 class ValueAtRisk(object):
-    def __init__(self, interval, matrix, weights, return_method='log', lookbackWindow=252):
-        print('val')
+    def __init__(self, interval, matrix, weights, return_method='log', lookbackWindow=252, series=False):
         self.lookbackWindow = lookbackWindow
-        self.input = matrix
         if interval > 0 and interval < 1:
             self.ci = interval
         else:
@@ -23,6 +21,7 @@ class ValueAtRisk(object):
         if isinstance(matrix, pd.DataFrame):
             self.input_index = matrix.index
             matrix = matrix.values
+        self.input = matrix
 
         if matrix.ndim != 2:
             raise Exception("Only accept 2 dimensions matrix", matrix.ndim)
@@ -40,12 +39,11 @@ class ValueAtRisk(object):
             self.weights = np.array(weights)
         else:
             self.weights = weights
-        if lookbackWindow > len(self.returnMatrix) + 1:
+        if self.lookbackWindow > len(self.returnMatrix) + 1:
             raise Exception("invalid Window, cannot excess", len(self.returnMatrix))
 
         self.portfolioReturn = np.dot(self.returnMatrix[-self.lookbackWindow:], self.weights)
         self.HistoricalPortfolioReturns = np.dot(self.returnMatrix, self.weights)
-
 
     def set_vaR_series(self):
         self.ValueAtRisk = pd.Series(index=self.input_index, name='var_series')
@@ -53,26 +51,44 @@ class ValueAtRisk(object):
     def calculateScaledWeights(self):
         Range = np.array(range(self.lookbackWindow))
         Range[:] = Range[::-1]
-        sma_weights = (1 - self.lambda_decay) * (self.lambda_decay ** Range)
-        self.scaledweights = sma_weights / (1 - (self.lambda_decay ** self.lookbackWindow))
+        sma_weights = (1 - self.lambdaDecay) * (self.lambdaDecay ** Range)
+        self.scaledweights = sma_weights / (1 - (self.lambdaDecay ** self.lookbackWindow))
 
     def get_market_value_vaR(self, marketValue):
         print(self.ValueAtRisk * marketValue)
         return self.ValueAtRisk * marketValue
 
+    def createBacktestDf(self):
+        returns_ = np.append(np.nan, self.HistoricalPortfolioReturns)
+        backtest_df = pd.DataFrame(index=self.input_index,
+                                   data={'VaR': self.ValueAtRisk.values,
+                                         'PortfolioReturn': returns_})
+        # actual_return_col = 'actual_{timescale}_day_return'.format(
+        #     timescale=self.timeScaler if hasattr(self, 'timeScaler') else "1")
+        # if self.timeScaler:
+        #     backtest_df[actual_return_col] = backtest_df['PortfolioReturn'].shift(-self.timeScaler)
+        # else:
+        #     backtest_df[actual_return_col] = backtest_df['PortfolioReturn'].shift(-1)
+        if hasattr(self,'timeScaler'):
+            backtest_df['realized_return'] = backtest_df['PortfolioReturn'].shift(-self.timeScaler)
+        else:
+            backtest_df['realized_return'] = backtest_df['PortfolioReturn'].shift(-1)
+
+        backtest_df['VaR_fail_flag'] = backtest_df.apply(
+            lambda row_: 1 if row_['realized_return'] < -1 * row_['VaR'] else 0, axis=1)
+        self.backtestDf = backtest_df
+
 
 class ParametricVaR(ValueAtRisk):
-    # series = True icin bir subclass a ihtiyac var mi.Aslinda her sey ayni fakat output olarak sayi yerine
-    # bir seri donuyoruz
     def __init__(self, interval, matrix, weights, return_method, lookbackWindow, timeScaler):
-        super().__init__(interval, matrix, weights, return_method, lookbackWindow, timeScaler)
-        self.timescaler=timeScaler
+        super().__init__(interval, matrix, weights, return_method, lookbackWindow)
+        self.timescaler = timeScaler
+
     def getCovarianceMatrix(self, current_portfolio_window):
         return np.cov(current_portfolio_window.T)
 
     def get_variance(self, cov_mat):
-        print('c')
-        self.variance = np.dot(np.dot(self.weights, cov_mat), self.weights.T)
+        return np.dot(np.dot(self.weights, cov_mat), self.weights.T)
 
     def get_vaR_value(self, variance):
         return abs(norm.ppf(self.ci) * np.sqrt(variance)) * math.sqrt(self.timescaler)
@@ -80,20 +96,22 @@ class ParametricVaR(ValueAtRisk):
     def vaR(self):
         cov_mat = self.getCovarianceMatrix(
             current_portfolio_window=self.returnMatrix[-self.lookbackWindow:])
+
         self.covariance_matrix = cov_mat
-        self.get_variance(cov_mat=cov_mat)
+        self.variance = self.get_variance(cov_mat=cov_mat)
         self.ValueAtRisk = self.get_vaR_value(variance=self.variance)
 
     def vaRSeries(self):
         self.set_vaR_series()
         for i in range(0, len(self.returnMatrix) - self.lookbackWindow):
             if i == 0:
-                current_portfolio_window = self.HistoricalPortfolioReturns[-self.lookbackWindow:]
+                current_portfolio_window = self.returnMatrix[-self.lookbackWindow:]
             else:
-                current_portfolio_window = self.HistoricalPortfolioReturns[-(self.lookbackWindow + i):-i]
+                current_portfolio_window = self.returnMatrix[-(self.lookbackWindow + i):-i]
 
             cov_mat = self.getCovarianceMatrix(current_portfolio_window=current_portfolio_window)
             current_window_variance = self.get_variance(cov_mat=cov_mat)
+            print(current_window_variance)
             self.ValueAtRisk[-i - 1] = self.get_vaR_value(current_window_variance)
 
 
@@ -108,7 +126,7 @@ class ParametricVaREwma(ParametricVaR):
         return np.dot(current_return_window, self.scaledweights)
 
     def vaR(self):
-        self.variance = self.get_variance(current_return_window=self.returnMatrix[-self.lookbackWindow:])
+        self.variance = self.get_variance(current_return_window=self.portfolioReturn)
         self.ValueAtRisk = self.get_vaR_value(variance=self.variance)
 
     def vaRSeries(self):
