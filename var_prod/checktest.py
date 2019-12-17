@@ -81,14 +81,13 @@ d = ValueAtRisk(interval=confidence_interval,
                 lookbackWindow=period_interval,
                 timeScaler=time_scaler)
 '''
-d = ValueAtRisk(interval=confidence_interval,
+d = ParametricVaREwma(interval=confidence_interval,
                 matrix=input_df,
                 weights=portfolio_securities_weights,
                 return_method=calc_type,
                 lookbackWindow=period_interval,
                 timeScaler=time_scaler,
-                sma=True,
-                lambda_decay=lambda_decay)
+                lambdaDecay=lambda_decay)
 '''
 
 d = MonteCarloVaR(interval=confidence_interval,

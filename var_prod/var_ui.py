@@ -201,13 +201,13 @@ def get_var_portfolio(portfolio_returns, var_series):
 
 def getDescription(fail, securities, weigths):
     a = list(zip(securities, weigths))
-    d = ' '.join(str(k) + ': %' + '{0:.2f}'.format(v*100) for k, v in a)
+    d = ' '.join(str(k) + ': %' + '{0:.2f}'.format(v * 100) for k, v in a)
     return 'Fail:{} \n {}'.format(fail, d)
 
 
 def getDescriptionFalseSerie(securities, weigths):
     a = list(zip(securities, weigths))
-    d = ' '.join(str(k) + ': %' + '{0:.2f}'.format(v*100) for k, v in a)
+    d = ' '.join(str(k) + ': %' + '{0:.2f}'.format(v * 100) for k, v in a)
     return '{}'.format(d)
 
 
@@ -262,38 +262,34 @@ def get_vaR_instance(input_df, weights, method, calc_type, period_interval,
                      time_scaler, num_simulations, lambda_decay,
                      confidence_interval):
     if method == 'Basic-Historical-Simulation':
-
+        print(confidence_interval)
         d = HistoricalVaR(interval=confidence_interval,
                           matrix=input_df,
                           weights=weights,
                           return_method=calc_type,
-                          lookbackWindow=period_interval
-                          )
+                          lookbackWindow=period_interval)
     elif method == 'Age-Weighted-Historical-Simulation':
-        d = HistoricalVaR(interval=confidence_interval,
+        d = AgeWeightedHistoricalVaR(interval=confidence_interval,
+                                     matrix=input_df,
+                                     weights=weights,
+                                     return_method=calc_type,
+                                     lookbackWindow=period_interval,
+                                     lambdaDecay=lambda_decay)
+    elif method == 'Parametric':
+        d = ParametricVaR(interval=confidence_interval,
                           matrix=input_df,
                           weights=weights,
                           return_method=calc_type,
                           lookbackWindow=period_interval,
-                          hybrid=True,
-                          lambda_decay_hist=lambda_decay
-                          )
-    elif method == 'Parametric':
-        d = ValueAtRisk(interval=confidence_interval,
-                        matrix=input_df,
-                        weights=weights,
-                        return_method=calc_type,
-                        lookbackWindow=period_interval,
-                        timeScaler=time_scaler)
+                          timeScaler=time_scaler)
     elif method == 'Parametric-EWMA':
-        d = ValueAtRisk(interval=confidence_interval,
-                        matrix=input_df,
-                        weights=weights,
-                        return_method=calc_type,
-                        lookbackWindow=period_interval,
-                        timeScaler=time_scaler,
-                        sma=True,
-                        lambda_decay=lambda_decay)
+        d = ParametricVaREwma(interval=confidence_interval,
+                              matrix=input_df,
+                              weights=weights,
+                              return_method=calc_type,
+                              lookbackWindow=period_interval,
+                              timeScaler=time_scaler,
+                              lambdaDecay=lambda_decay)
     elif method == 'Monte-Carlo-Simulation':
         d = MonteCarloVaR(interval=confidence_interval,
                           matrix=input_df,
@@ -334,14 +330,15 @@ def calculateVar(n_clicks, method, securities, calc_type, price_col, period_inte
         d = get_vaR_instance(input_df, weights, method,
                              calc_type, period_interval, time_scaler, num_simulations, lambda_decay / 100,
                              confidence_interval)
+        print(d)
         returns = get_returns(input_df, calc_type)
         returns['portfolio_return'] = returns.dot(weights)
         if series == 'False':
             Value_at_Risk = d.vaR()
             _ = 'Value at Risk of Portfolio = {0:.3f}'.format(Value_at_Risk)
             h = html.Div(html.P(children=_, id='VaR-result', style={'color': 'red',
-                                                                    'border':'1px solid black',
-                                                                    'width':'33%'}))
+                                                                    'border': '1px solid black',
+                                                                    'width': '33%'}))
             g = get_var_graph(returns, period_interval)
             d = getDescriptionFalseSerie(securities, d.weights)
             # if method == 'Monte-Carlo-Simulation':
