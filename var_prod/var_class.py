@@ -7,14 +7,9 @@ from scipy.stats import norm
 import math
 
 
-# class ValueAtRiskFactory:
-#     @staticmethod
-#     def createObjectFromParameters(**kwargs):
-#         for k,v in kwargs.items():
-
-
 class ValueAtRisk(object):
-    def __init__(self, interval, matrix, weights, return_method='log', lookbackWindow=252, series=False):
+    def __init__(self, interval, matrix, weights, return_method, lookbackWindow, marketValue=1000):
+        self.marketValue = marketValue
         self.lookbackWindow = lookbackWindow
         if interval > 0 and interval < 1:
             self.ci = interval
@@ -49,7 +44,8 @@ class ValueAtRisk(object):
         self.HistoricalPortfolioReturns = np.dot(self.returnMatrix, self.weights)
 
     def set_vaR_series(self):
-        self.ValueAtRisk = pd.Series(index=self.input_index, name='var_series')
+        self.ValueAtRisk = pd.Series(index=self.input_index, name='VaR_series')
+        self.MarginalVaR = pd.Series(index=self.input_index, name='MarginalVaR_series')
 
     def calculateScaledWeights(self):
         Range = np.array(range(self.lookbackWindow))
@@ -87,6 +83,7 @@ class ParametricVaR(ValueAtRisk):
         super().__init__(interval, matrix, weights, return_method, lookbackWindow)
         self.timescaler = timeScaler
 
+<<<<<<< Updated upstream
     def getBeta(self):
         marketvalue = 1000
         asset_values = np.dot(self.weights, marketvalue)
@@ -99,6 +96,23 @@ class ParametricVaR(ValueAtRisk):
     def getMarginalVaRs(self):
         self.getBeta()
         self.Marginal_VaRs = self.beta * self.ValueAtRisk
+=======
+    def setBetaMarket(self):
+        asset_values = np.dot(self.weights, self.marketValue)
+        cov_mat = self.getCovarianceMatrix(self.returnMatrix[-self.lookbackWindow:])
+        portfolio_variance = self.get_variance(cov_mat)
+        self.beta_market = self.marketValue * np.dot(cov_mat, asset_values) / portfolio_variance
+
+    def setBeta(self):
+        cov_mat = self.getCovarianceMatrix(self.returnMatrix[-self.lookbackWindow:])
+        portfolio_variance = self.get_variance(cov_mat)
+        self.beta = np.dot(cov_mat, self.weights) / portfolio_variance
+
+    def getMarginalVaR(self):
+        self.setBeta()
+        self.MarginalVaR = self.beta * self.ValueAtRisk
+        self.ComponentVaR = self.MarginalVaR * self.weights
+>>>>>>> Stashed changes
 
     def getCovarianceMatrix(self, current_portfolio_window):
         # diagonal std matrice x correlation matrice x diagonal std matrice
@@ -112,11 +126,8 @@ class ParametricVaR(ValueAtRisk):
         return abs(norm.ppf(self.ci) * np.sqrt(variance)) * math.sqrt(self.timescaler)
 
     def vaR(self):
-        cov_mat = self.getCovarianceMatrix(
-            current_portfolio_window=self.returnMatrix[-self.lookbackWindow:])
-
-        self.covariance_matrix = cov_mat
-        self.variance = self.get_variance(cov_mat=cov_mat)
+        self.covariance_matrix = self.getCovarianceMatrix(self.returnMatrix[-self.lookbackWindow:])
+        self.variance = self.get_variance(cov_mat=self.covariance_matrix)
         self.ValueAtRisk = self.get_vaR_value(variance=self.variance)
 
     def vaRSeries(self):
