@@ -2,6 +2,7 @@ venv/
 .idea/
 __pycache_/
 sources/*
+cansu/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

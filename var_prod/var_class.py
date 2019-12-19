@@ -86,15 +86,20 @@ class ParametricVaR(ValueAtRisk):
     def __init__(self, interval, matrix, weights, return_method, lookbackWindow, timeScaler):
         super().__init__(interval, matrix, weights, return_method, lookbackWindow)
         self.timescaler = timeScaler
+
     def getBeta(self):
         marketvalue = 1000
-        asset_values = np.dot(self.weights,marketvalue)
+        asset_values = np.dot(self.weights, marketvalue)
         cov_mat = self.getCovarianceMatrix(self.returnMatrix[-self.lookbackWindow:])
-        variances = np.diag(cov_mat)
-        portfolio_variance = self.get_variance(cov_mat)
-        beta = marketvalue * np.dot(cov_mat,asset_values) / portfolio_variance
-        dollar_covariance = np.dot(cov_mat,self.weights.T)
-        beta * self.ValueAtRisk/marketvalue
+        pf_variance = np.dot(asset_values.T, np.dot(cov_mat, asset_values))
+        covariance_asset_portfolio = np.dot(cov_mat, asset_values)
+        self.beta = marketvalue * (covariance_asset_portfolio / pf_variance)
+        # asset_variances = np.diag(cov_mat)
+        # # individual var
+    def getMarginalVaRs(self):
+        self.getBeta()
+        self.Marginal_VaRs = self.beta * self.ValueAtRisk
+
     def getCovarianceMatrix(self, current_portfolio_window):
         # diagonal std matrice x correlation matrice x diagonal std matrice
         return np.cov(current_portfolio_window.T)
