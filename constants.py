@@ -9,10 +9,12 @@ import getpass
 from scipy.stats import norm
 
 if getpass.getuser()=='a.acar':
+    project_path = Path(r'C:\Users\a.acar\Desktop\PycharmProjects\VaR')
+
     hist_store = str(
         r'C:\Users\a.acar\PycharmProjects\VaR\sources\hist_data.h5')
     hist_pkl = str(
-            r'C:\Users\a.acar\PycharmProjects\VaR\sources\hist_data.pkl')
+            r'C:\Users\a.acar\Desktop\PycharmProjects\VaR\sources\hist_data.pkl')
 
     VaR_png_output_path = str(r"C:\Users\a.acar\PycharmProjects\VaR\outputs")
 
