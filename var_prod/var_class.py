@@ -8,31 +8,36 @@ import math
 
 
 class ValueAtRisk(object):
-    def __init__(self, interval, matrix, weights, return_method, lookbackWindow, marketValue=1000):
+    def __init__(self, interval, weights, return_method, lookbackWindow, marketValue=1000,
+                 matrix=None, returnMatrix=None):
         self.marketValue = marketValue
         self.lookbackWindow = lookbackWindow
+        self.returnMatrix = returnMatrix
+
         if interval > 0 and interval < 1:
             self.ci = interval
         else:
             raise Exception("Invalid confidence interval", interval)
-
-        if isinstance(matrix, pd.DataFrame):
-            self.input_index = matrix.index
-            matrix = matrix.values
+        if matrix:
+            print('c')
+            if matrix.ndim != 2:
+                raise Exception("Only accept 2 dimensions matrix", matrix.ndim)
+            if isinstance(matrix, pd.DataFrame):
+                self.input_index = matrix.index
+                matrix = matrix.values
         self.input = matrix
 
-        if matrix.ndim != 2:
-            raise Exception("Only accept 2 dimensions matrix", matrix.ndim)
+        if self.returnMatrix is None:
+            if return_method == 'log':
+                self.returnMatrix = np.diff(np.log(self.input), axis=0)
+            elif return_method == 'pct':
+                self.returnMatrix = np.diff(self.input, axis=0) / self.input[:-1, ]
+            else:
+                raise Exception("Unvalid return method")
 
-        if len(weights) != matrix.shape[1]:
-            raise Exception("Weights Length doesn't match")
+        # if len(weights) != matrix.shape[1]:
+        #     raise Exception("Weights Length doesn't match")
 
-        if return_method == 'log':
-            self.returnMatrix = np.diff(np.log(self.input), axis=0)
-        elif return_method == 'pct':
-            self.returnMatrix = np.diff(self.input, axis=0) / self.input[:-1, ]
-        else:
-            raise Exception("Unvalid return method")
         if not isinstance(weights, np.ndarray):
             self.weights = np.array(weights)
         else:
@@ -79,8 +84,8 @@ class ValueAtRisk(object):
 
 
 class ParametricVaR(ValueAtRisk):
-    def __init__(self, interval, matrix, weights, return_method, lookbackWindow, timeScaler):
-        super().__init__(interval, matrix, weights, return_method, lookbackWindow)
+    def __init__(self, interval,  weights, return_method, lookbackWindow, timeScaler, matrix,returnMatrix):
+        super().__init__(interval,  weights, return_method, lookbackWindow,matrix, returnMatrix)
         self.timescaler = timeScaler
 
     def getBeta(self):
@@ -92,9 +97,11 @@ class ParametricVaR(ValueAtRisk):
         self.beta = marketvalue * (covariance_asset_portfolio / pf_variance)
         # asset_variances = np.diag(cov_mat)
         # # individual var
+
     def getMarginalVaRs(self):
         self.getBeta()
         self.Marginal_VaRs = self.beta * self.ValueAtRisk
+
     def setBetaMarket(self):
         asset_values = np.dot(self.weights, self.marketValue)
         cov_mat = self.getCovarianceMatrix(self.returnMatrix[-self.lookbackWindow:])
@@ -120,7 +127,7 @@ class ParametricVaR(ValueAtRisk):
         return np.dot(np.dot(self.weights, cov_mat), self.weights.T)
 
     def get_vaR_value(self, variance):
-        return abs(norm.ppf(self.ci) * np.sqrt(variance)) * math.sqrt(self.timescaler)
+        return abs(norm.ppf(self.ci) * np.sqrt(variance)) * np.sqrt(self.timescaler)
 
     def vaR(self):
         self.covariance_matrix = self.getCovarianceMatrix(self.returnMatrix[-self.lookbackWindow:])
