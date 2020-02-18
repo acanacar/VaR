@@ -15,8 +15,8 @@ b1 = Bond(coupon_rate=.0575, maturity=1.5, face_value=100, frequency=2)
 b1.bond_purchased_price = 95.0428
 b1.price_to_bond()
 b1.portfolio_frame = b1.get_portfolio_frame()
-yield_df = get_yield_returns(data=b1.portfolio_frame, current_date=b1.current_date)
-weights = (b1.portfolio_frame['nominal']/b1.portfolio_frame['nominal'].sum()).values
+yield_returns_df = get_yield_returns(data=b1.portfolio_frame, current_date=b1.current_date)
+weights = (b1.portfolio_frame['nominal'] / b1.portfolio_frame['nominal'].sum()).values
 
 num_simulations = 10000
 time_scaler = 1
@@ -25,7 +25,6 @@ period_interval = 252
 confidence_interval = .95
 price_col = 'Adj Close'
 lambda_decay = .98
-
 
 d = ParametricVaR(interval=confidence_interval,
                   weights=weights,

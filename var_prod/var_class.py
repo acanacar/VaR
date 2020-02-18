@@ -13,18 +13,22 @@ class ValueAtRisk(object):
         self.marketValue = marketValue
         self.lookbackWindow = lookbackWindow
         self.returnMatrix = returnMatrix
-
+        if not isinstance(weights, np.ndarray):
+            self.weights = np.array(weights)
+        else:
+            self.weights = weights
         if interval > 0 and interval < 1:
             self.ci = interval
         else:
             raise Exception("Invalid confidence interval", interval)
-        if matrix:
-            print('c')
+        if matrix is not None:
             if matrix.ndim != 2:
                 raise Exception("Only accept 2 dimensions matrix", matrix.ndim)
             if isinstance(matrix, pd.DataFrame):
                 self.input_index = matrix.index
                 matrix = matrix.values
+            if len(weights) != matrix.shape[1]:
+                raise Exception("Weights Length doesn't match")
         self.input = matrix
 
         if self.returnMatrix is None:
@@ -34,14 +38,6 @@ class ValueAtRisk(object):
                 self.returnMatrix = np.diff(self.input, axis=0) / self.input[:-1, ]
             else:
                 raise Exception("Unvalid return method")
-
-        # if len(weights) != matrix.shape[1]:
-        #     raise Exception("Weights Length doesn't match")
-
-        if not isinstance(weights, np.ndarray):
-            self.weights = np.array(weights)
-        else:
-            self.weights = weights
         if self.lookbackWindow > len(self.returnMatrix) + 1:
             raise Exception("invalid Window, cannot excess", len(self.returnMatrix))
 
@@ -84,8 +80,8 @@ class ValueAtRisk(object):
 
 
 class ParametricVaR(ValueAtRisk):
-    def __init__(self, interval,  weights, return_method, lookbackWindow, timeScaler, matrix,returnMatrix):
-        super().__init__(interval,  weights, return_method, lookbackWindow,matrix, returnMatrix)
+    def __init__(self, interval, weights, return_method, lookbackWindow, timeScaler, matrix, returnMatrix):
+        super().__init__(interval, weights, return_method, lookbackWindow, matrix, returnMatrix)
         self.timescaler = timeScaler
 
     def getBeta(self):
@@ -159,7 +155,6 @@ class ParametricVaREwma(ParametricVaR):
         return np.dot(current_return_window, self.scaledweights)
 
     def vaR(self):
-
         self.variance = self.get_variance(current_return_window=self.portfolioReturn)
         self.ValueAtRisk = self.get_vaR_value(variance=self.variance)
 
