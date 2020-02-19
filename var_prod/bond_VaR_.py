@@ -4,13 +4,15 @@ import pandas as pd
 import numpy as np
 
 
-def create_yield_return_series(mean=0, std=1):
+def create_yield_return_series(mean=0, std=.2):
     rate_days = [30, 90, 180, 270, 360, 720, 1080, 1440, 1800, 2160, 2520, 2880, 3240, 3600]
+    first_interest_rates = dict(zip(rate_days, np.linspace(10.5, 11.41, len(rate_days))))
     l = []
     dates = pd.date_range(start='1/1/2016', end='1/01/2021')
     for day in range(rate_days[0], 3601):
-        if day in rate_days:
-            arr = np.random.normal(mean, std, size=len(dates))
+        if day in first_interest_rates.keys():
+            ret = np.random.lognormal(mean, std, size=len(dates))
+            arr = first_interest_rates[day] * np.cumprod(ret)
             data = pd.Series(arr, index=dates, name=day)
         else:
             data = pd.Series(index=dates, name=day)
@@ -18,6 +20,7 @@ def create_yield_return_series(mean=0, std=1):
 
     df = pd.concat(l, axis=1)
     df.interpolate(axis=1, inplace=True)
+    df = df / 100
     return df
 
 
@@ -33,14 +36,14 @@ yield_returns = create_yield_return_series()
 
 
 class Bond(object):
-    Coupon = namedtuple('Coupon', ['mtd', 'dtm', 'nominal', 'bond_code'])
+    Coupon = namedtuple('Coupon', ['mtd', 'dtm', 'current_rates', 'discount_rate', 'pv', 'nominal', 'bond_code'])
 
     def __init__(self,
                  coupon_rate,
                  maturity,
                  face_value,
                  frequency,
-                 settlement_date='2019-01-03'):
+                 settlement_date='2017-01-03'):
         self.bond_price = None
         self.coupons = None
         self.face_coupon = None
@@ -70,15 +73,33 @@ class Bond(object):
         ''' odenecek kuponlarin tarihleri ve odenme tarihlerine kalan gun sayilarini hesaplar '''
         mdts = pd.date_range(start=self.settlement_date,
                              end=self.maturity_date,
-                             periods=self.number_of_periods + 1)
+                             periods=self.number_of_periods + 1,
+                             closed='right')
         dtms = list(map(lambda c_date: (c_date - self.current_date).days, mdts))
-        self.coupons = [Bond.Coupon(mdt, dtm, self.coupon_payment, self.bond_code) for mdt, dtm in
-                        zip(mdts, dtms) if
+        current_rates = list(map(lambda dtm: yield_returns.loc[self.current_date, dtm], dtms))
+        discount_rates = list(map(lambda current_rate: np.divide(1, 1 + current_rate), current_rates))
+        self.coupons = [Bond.Coupon(mdt,
+                                    dtm,
+                                    current_rate,
+                                    discount_rate,
+                                    self.coupon_payment * discount_rate,
+                                    self.coupon_payment,
+                                    self.bond_code) for mdt, dtm, current_rate, discount_rate in
+                        zip(mdts, dtms, current_rates, discount_rates) if
                         mdt > self.current_date]
 
     def create_face_coupon(self):
         dtm = (self.maturity_date - self.current_date).days
-        self.face_coupon = Bond.Coupon(self.maturity_date, dtm, self.face_value, self.bond_code)
+        current_rate = yield_returns.loc[self.current_date, dtm]
+        discount_rate = np.divide(1, 1 + current_rate)
+
+        self.face_coupon = Bond.Coupon(self.maturity_date,
+                                       dtm,
+                                       current_rate,
+                                       discount_rate,
+                                       self.face_value * discount_rate,
+                                       self.face_value,
+                                       self.bond_code)
 
     def get_portfolio_frame(self):
         self.create_coupons()
@@ -86,7 +107,6 @@ class Bond(object):
         portfolio_frame = pd.DataFrame.from_records(self.coupons + [self.face_coupon],
                                                     columns=Bond.Coupon._fields)
         return portfolio_frame
-
 
     def calc_pv_of_face_value(self):
         """ maturity date'de odenecek face value nun present value sunu hesaplar """

@@ -8,11 +8,9 @@ import math
 
 
 class ValueAtRisk(object):
-    def __init__(self, interval, weights, return_method, lookbackWindow, marketValue=1000,
-                 matrix=None, returnMatrix=None):
+    def __init__(self, matrix, interval, weights, return_method, lookbackWindow, marketValue=1000):
         self.marketValue = marketValue
         self.lookbackWindow = lookbackWindow
-        self.returnMatrix = returnMatrix
         if not isinstance(weights, np.ndarray):
             self.weights = np.array(weights)
         else:
@@ -31,13 +29,12 @@ class ValueAtRisk(object):
                 raise Exception("Weights Length doesn't match")
         self.input = matrix
 
-        if self.returnMatrix is None:
-            if return_method == 'log':
-                self.returnMatrix = np.diff(np.log(self.input), axis=0)
-            elif return_method == 'pct':
-                self.returnMatrix = np.diff(self.input, axis=0) / self.input[:-1, ]
-            else:
-                raise Exception("Unvalid return method")
+        if return_method == 'log':
+            self.returnMatrix = np.diff(np.log(self.input), axis=0)
+        elif return_method == 'pct':
+            self.returnMatrix = np.diff(self.input, axis=0) / self.input[:-1, ]
+        else:
+            raise Exception("Unvalid return method")
         if self.lookbackWindow > len(self.returnMatrix) + 1:
             raise Exception("invalid Window, cannot excess", len(self.returnMatrix))
 
@@ -80,8 +77,8 @@ class ValueAtRisk(object):
 
 
 class ParametricVaR(ValueAtRisk):
-    def __init__(self, interval, weights, return_method, lookbackWindow, timeScaler, matrix, returnMatrix):
-        super().__init__(interval, weights, return_method, lookbackWindow, matrix, returnMatrix)
+    def __init__(self, matrix,interval, weights, return_method, lookbackWindow, timeScaler ):
+        super().__init__(matrix,interval, weights, return_method, lookbackWindow )
         self.timescaler = timeScaler
 
     def getBeta(self):

@@ -18,23 +18,6 @@ portfolio_securities_weights = list(map(lambda y: y / lis_sum, lis))
 #
 portfolio_securities = random.sample(all_securities, n)
 
-
-def get_yield_returns(data, current_date):
-    '''bononun sahip oldugu coupon ve face_coupon getirilerine ait vadelere denk gelen historical yield returnler olusturuluyor'''
-    maturities = data['dtm'].unique()
-    return yield_returns.loc[yield_returns.index < current_date, maturities].copy()
-
-
-b1 = Bond(coupon_rate=.0575, maturity=1.5, face_value=100, frequency=2)
-b1.bond_purchased_price = 95.0428
-b1.price_to_bond()
-b1.portfolio_frame = b1.get_portfolio_frame()
-yield_df = get_yield_returns(data=b1.portfolio_frame, current_date=b1.current_date)
-weights = (b1.portfolio_frame['nominal']/b1.portfolio_frame['nominal'].sum()).values
-
-
-
-
 #
 '''
 col = 'Close'
@@ -77,13 +60,7 @@ input_df = data.loc[:, (portfolio_securities, price_col)]
 input_df.columns = input_df.columns.droplevel(1)
 input_df = input_df.dropna(axis=1, how='all').dropna(axis=0, how='any')
 
-d = ParametricVaR(interval=confidence_interval,
-                  matrix=input_df,
-                  weights=weights,
-                  return_method=calc_type,
-                  lookbackWindow=period_interval,
-                  timeScaler=time_scaler,
-                  returnMatrix=yield_df.values)
+
 '''
 d = HistoricalVaR(interval=confidence_interval,
                   matrix=input_df,
