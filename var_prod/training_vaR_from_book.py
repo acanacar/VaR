@@ -177,6 +177,8 @@ EWMArho = np.divide(EWMA[:, 2], np.sqrt(np.multiply(EWMA[:, 0], EWMA[:, 1])))
 
 print(EWMArho)
 
+
+
 # Chapter 4: Risk Measures
 
 from scipy import stats
@@ -345,13 +347,13 @@ for t in range(WE, T):
     VaR[t, 3] = -np.sqrt(s4) * stats.norm.ppf(p) * value  # GARCH(1,1)
 
 # Backtesting analysis in Python
-W1 = WE # Python index starts at 0
+W1 = WE  # Python index starts at 0
 m = ["EWMA", "MA", "HS", "GARCH"]
 
 for i in range(4):
-    VR = sum(y[W1:T] < -VaR[W1:T,i])/(p*(T-WE))
+    VR = sum(y[W1:T] < -VaR[W1:T, i]) / (p * (T - WE))
     s = np.std(VaR[W1:T, i], ddof=1)
-    print ([i, m[i], VR, s])
+    print([i, m[i], VR, s])
 
 plt.plot(y[W1:T])
 plt.plot(VaR[W1:T])

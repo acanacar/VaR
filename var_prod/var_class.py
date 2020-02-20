@@ -142,15 +142,14 @@ class ParametricVaR(ValueAtRisk):
 
 
 class ParametricVaREwma(ParametricVaR):
-    def __init__(self, interval, matrix, weights, return_method, lookbackWindow, timeScaler, lambdaDecay):
-        super().__init__(interval, matrix, weights, return_method, lookbackWindow, timeScaler)
+    def __init__(self, matrix,interval,  weights, return_method, lookbackWindow, timeScaler, lambdaDecay):
+        super().__init__(matrix,interval,  weights, return_method, lookbackWindow, timeScaler)
         self.lambdaDecay = lambdaDecay
         self.timescaler = timeScaler
         self.calculateScaledWeights()
 
     def get_variance(self, current_return_window):
         return np.dot(current_return_window, self.scaledweights)
-
     def vaR(self):
         self.variance = self.get_variance(current_return_window=self.portfolioReturn)
         self.ValueAtRisk = self.get_vaR_value(variance=self.variance)
@@ -167,9 +166,8 @@ class ParametricVaREwma(ParametricVaR):
 
 
 class HistoricalVaR(ValueAtRisk):
-    def __init__(self, interval, matrix, weights, return_method, lookbackWindow):
-        print('ccc')
-        super().__init__(interval, matrix, weights, return_method, lookbackWindow)
+    def __init__(self, matrix,interval,  weights, return_method, lookbackWindow):
+        super().__init__(matrix,interval,  weights, return_method, lookbackWindow)
 
     def get_var_value(self, data):
         return abs(np.percentile(data, 100 * (1 - self.ci), interpolation='nearest'))
@@ -188,8 +186,8 @@ class HistoricalVaR(ValueAtRisk):
 
 
 class AgeWeightedHistoricalVaR(HistoricalVaR):
-    def __init__(self, interval, matrix, weights, return_method, lookbackWindow, lambdaDecay):
-        super().__init__(interval, matrix, weights, return_method, lookbackWindow)
+    def __init__(self, matrix,interval,  weights, return_method, lookbackWindow, lambdaDecay):
+        super().__init__(matrix,interval,  weights, return_method, lookbackWindow)
         self.lambdaDecay = lambdaDecay
         self.calculateScaledWeights()
 
@@ -216,12 +214,12 @@ class AgeWeightedHistoricalVaR(HistoricalVaR):
 
 
 class MonteCarloVaR(ValueAtRisk):
-    def __init__(self, interval, matrix, weights, return_method,
+    def __init__(self, matrix,interval,  weights, return_method,
                  lookbackWindow, timeScaler=1, numSimulations=1000):
         self.timeScaler = timeScaler
         self.numSimulations = numSimulations
 
-        super().__init__(interval, matrix, weights, return_method, lookbackWindow)
+        super().__init__(matrix,interval,  weights, return_method, lookbackWindow)
 
     def setPortfolioPrices(self):
         self.portfolioPrices = np.dot(self.input, self.weights.T)

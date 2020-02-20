@@ -27,19 +27,27 @@ confidence_interval = .95
 price_col = 'Adj Close'
 lambda_decay = .98
 
-d = ParametricVaR(interval=confidence_interval,
-                  weights=weights,
-                  return_method=calc_type,
-                  lookbackWindow=period_interval,
-                  timeScaler=time_scaler,
-                  matrix=yield_returns_df)
+# d = ParametricVaR(interval=confidence_interval,
+#                   weights=weights,
+#                   return_method=calc_type,
+#                   lookbackWindow=period_interval,
+#                   timeScaler=time_scaler,
+#                   matrix=yield_returns_df)
+d = ParametricVaREwma(interval=confidence_interval,
+                      weights=weights,
+                      return_method=calc_type,
+                      lookbackWindow=period_interval,
+                      timeScaler=time_scaler,
+                      lambdaDecay=lambda_decay,
+                      matrix=yield_returns_df)
 d.vaR()
 
 # calculate bono VaR
 rate_change_expectation = d.ValueAtRisk
+
 b1.portfolio_frame['tomorrow_rates'] = (b1.portfolio_frame['current_rates'] * (1 + rate_change_expectation))
 b1.portfolio_frame['new_dr'] = 1 / (1 + b1.portfolio_frame['tomorrow_rates'])
-b1.portfolio_frame['new_pv'] = b1.portfolio_frame['nominal']*b1.portfolio_frame['new_dr']
+b1.portfolio_frame['new_pv'] = b1.portfolio_frame['nominal'] * b1.portfolio_frame['new_dr']
 total_start_val = sum(b1.portfolio_frame['nominal'])
 
 VaR_BOND = sum(b1.portfolio_frame['new_pv'] - b1.portfolio_frame['pv'])
