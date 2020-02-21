@@ -40,7 +40,10 @@ class ValueAtRisk(object):
 
         self.portfolioReturn = np.dot(self.returnMatrix[-self.lookbackWindow:], self.weights)
         self.HistoricalPortfolioReturns = np.dot(self.returnMatrix, self.weights)
-
+    def get_vaR_sigma(self):
+        percentile_point = norm.ppf(self.ci)
+        time_horizon_factor = np.sqrt(self.timescaler)
+        return -percentile_point * self.sigma * time_horizon_factor
     def set_vaR_series(self):
         self.ValueAtRisk = pd.Series(index=self.input_index, name='VaR_series')
         self.MarginalVaR = pd.Series(index=self.input_index, name='MarginalVaR_series')
@@ -119,10 +122,7 @@ class ParametricVaR(ValueAtRisk):
         # weights matrice x covariance matrice x transposed weights matrice
         return np.dot(np.dot(self.weights, cov_mat), self.weights.T)
 
-    def get_vaR_sigma(self):
-        percentile_point = norm.ppf(self.ci)
-        time_horizon_factor = np.sqrt(self.timescaler)
-        return abs(percentile_point * self.sigma * time_horizon_factor)
+
 
     def vaR(self):
         self.covariance_matrix = self.getCovarianceMatrix(self.returnMatrix[-self.lookbackWindow:])
@@ -139,10 +139,11 @@ class ParametricVaR(ValueAtRisk):
                 current_portfolio_window = self.returnMatrix[-(self.lookbackWindow + i):-i]
 
             cov_mat = self.getCovarianceMatrix(current_portfolio_window=current_portfolio_window)
-            current_window_variance = self.get_variance(cov_mat=cov_mat)
-            print(current_window_variance)
-            self.ValueAtRisk[-i - 1] = self.get_vaR_value(current_window_variance)
-    
+            current_rt_point_variance = self.get_variance(cov_mat=cov_mat)
+            self.sigma = np.sqrt(current_rt_point_variance)
+            self.ValueAtRisk[-i - 1] = self.get_vaR_sigma()
+
+
 
 class ParametricVaREwma(ParametricVaR):
     def __init__(self, matrix, interval, weights, return_method, lookbackWindow, timeScaler, lambda_decay):
@@ -171,12 +172,10 @@ class ParametricVaREwma(ParametricVaR):
         return decay_factor ** constant
 
     def getEwma_d(self, constant):
-        rt = self.portfolioReturn.iloc[constant]
+        rt = self.portfolioReturn[constant]
         return rt ** 2
 
     def getEwma_B(self):
-        decay_factor = self.get_lambda()
-        a = 1 - decay_factor
         window_length = self.get_window_length()
         Ewma_B = 1
         for i in range(1, window_length):
@@ -186,13 +185,13 @@ class ParametricVaREwma(ParametricVaR):
             Ewma_B *= (Ewma_c * Ewma_d)
         return Ewma_B
 
-    def get_variance_with_EWMA(self):
+    def get_variance_with_EWMA(self, current_return_window):
         return self.getEwma_A() * self.getEwma_B()
 
     def vaR(self):
-        self.variance = self.get_variance(current_return_window=self.portfolioReturn)
-        self.variance = self.get_variance_with_EWMA(current_return_window=self.portfolioReturn)
-        self.ValueAtRisk = self.get_vaR_value(variance=self.variance)
+        # self.variance = self.get_variance(current_return_window=self.portfolioReturn)
+        self.variance = self.get_variance_with_EWMA()
+        self.ValueAtRisk = self.get_vaR_sigma * self.marketValue
 
     def vaRSeries(self):
         self.set_vaR_series()
