@@ -141,7 +141,7 @@ class ParametricVaR(ValueAtRisk):
             cov_mat = self.getCovarianceMatrix(current_portfolio_window=current_portfolio_window)
             current_rt_point_variance = self.get_variance(cov_mat=cov_mat)
             self.sigma = np.sqrt(current_rt_point_variance)
-            self.ValueAtRisk[-i - 1] = self.get_vaR_sigma()
+            self.ValueAtRisk[-i - 1] = self.get_vaR_sigma()* self.marketValue
 
 
 
@@ -191,7 +191,7 @@ class ParametricVaREwma(ParametricVaR):
     def vaR(self):
         # self.variance = self.get_variance(current_return_window=self.portfolioReturn)
         self.variance = self.get_variance_with_EWMA()
-        self.ValueAtRisk = self.get_vaR_sigma * self.marketValue
+        self.ValueAtRisk = self.get_vaR_sigma() * self.marketValue
 
     def vaRSeries(self):
         self.set_vaR_series()
@@ -200,8 +200,10 @@ class ParametricVaREwma(ParametricVaR):
                 current_portfolio_window = self.HistoricalPortfolioReturns[-self.lookbackWindow:]
             else:
                 current_portfolio_window = self.HistoricalPortfolioReturns[-(self.lookbackWindow + i):-i]
-            current_window_variance = self.get_variance(current_return_window=current_portfolio_window)
-            self.ValueAtRisk[-i - 1] = self.get_vaR_value(variance=current_window_variance)
+            current_rt_point_variance = self.get_variance(current_return_window=current_portfolio_window)
+            self.sigma = np.sqrt(current_rt_point_variance)
+
+            self.ValueAtRisk[-i - 1] = self.get_vaR_sigma() * self.marketValue
 
 
 class HistoricalVaR(ValueAtRisk):
