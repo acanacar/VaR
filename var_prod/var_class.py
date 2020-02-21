@@ -48,8 +48,8 @@ class ValueAtRisk(object):
     def calculateScaledWeights(self):
         Range = np.array(range(self.lookbackWindow))
         Range[:] = Range[::-1]
-        sma_weights = (1 - self.lambdaDecay) * (self.lambdaDecay ** Range)
-        self.scaledweights = sma_weights / (1 - (self.lambdaDecay ** self.lookbackWindow))
+        sma_weights = (1 - self.lambda_decay) * (self.lambda_decay ** Range)
+        self.scaledweights = sma_weights / (1 - (self.lambda_decay ** self.lookbackWindow))
 
     def get_market_value_vaR(self, marketValue):
         print(self.ValueAtRisk * marketValue)
@@ -77,8 +77,8 @@ class ValueAtRisk(object):
 
 
 class ParametricVaR(ValueAtRisk):
-    def __init__(self, matrix,interval, weights, return_method, lookbackWindow, timeScaler ):
-        super().__init__(matrix,interval, weights, return_method, lookbackWindow )
+    def __init__(self, matrix, interval, weights, return_method, lookbackWindow, timeScaler):
+        super().__init__(matrix, interval, weights, return_method, lookbackWindow)
         self.timescaler = timeScaler
 
     def getBeta(self):
@@ -119,13 +119,16 @@ class ParametricVaR(ValueAtRisk):
         # weights matrice x covariance matrice x transposed weights matrice
         return np.dot(np.dot(self.weights, cov_mat), self.weights.T)
 
-    def get_vaR_value(self, variance):
-        return abs(norm.ppf(self.ci) * np.sqrt(variance)) * np.sqrt(self.timescaler)
+    def get_vaR_sigma(self):
+        percentile_point = norm.ppf(self.ci)
+        time_horizon_factor = np.sqrt(self.timescaler)
+        return abs(percentile_point * self.sigma * time_horizon_factor)
 
     def vaR(self):
         self.covariance_matrix = self.getCovarianceMatrix(self.returnMatrix[-self.lookbackWindow:])
         self.variance = self.get_variance(cov_mat=self.covariance_matrix)
-        self.ValueAtRisk = self.get_vaR_value(variance=self.variance)
+        self.sigma = np.sqrt(self.variance)
+        self.ValueAtRisk = self.get_vaR_sigma() * self.marketValue
 
     def vaRSeries(self):
         self.set_vaR_series()
@@ -139,19 +142,56 @@ class ParametricVaR(ValueAtRisk):
             current_window_variance = self.get_variance(cov_mat=cov_mat)
             print(current_window_variance)
             self.ValueAtRisk[-i - 1] = self.get_vaR_value(current_window_variance)
-
+    
 
 class ParametricVaREwma(ParametricVaR):
-    def __init__(self, matrix,interval,  weights, return_method, lookbackWindow, timeScaler, lambdaDecay):
-        super().__init__(matrix,interval,  weights, return_method, lookbackWindow, timeScaler)
-        self.lambdaDecay = lambdaDecay
+    def __init__(self, matrix, interval, weights, return_method, lookbackWindow, timeScaler, lambda_decay):
+        super().__init__(matrix, interval, weights, return_method, lookbackWindow, timeScaler)
+        self.lambda_decay = lambda_decay
         self.timescaler = timeScaler
         self.calculateScaledWeights()
 
     def get_variance(self, current_return_window):
         return np.dot(current_return_window, self.scaledweights)
+
+    def get_lambda(self):
+        return self.lambda_decay
+
+    def get_window_length(self):
+        return self.lookbackWindow
+
+    def getEwma_A(self):
+        decay_factor = self.get_lambda()
+        a = 1 - decay_factor
+        window_length = self.get_window_length()
+        return np.divide(1 - decay_factor, np.multiply(decay_factor, 1 - a ** window_length))
+
+    def getEwma_c(self, constant):
+        decay_factor = self.get_lambda()
+        return decay_factor ** constant
+
+    def getEwma_d(self, constant):
+        rt = self.portfolioReturn.iloc[constant]
+        return rt ** 2
+
+    def getEwma_B(self):
+        decay_factor = self.get_lambda()
+        a = 1 - decay_factor
+        window_length = self.get_window_length()
+        Ewma_B = 1
+        for i in range(1, window_length):
+            return_index = i - 1
+            Ewma_c = self.getEwma_c(constant=i)
+            Ewma_d = self.getEwma_d(constant=return_index)
+            Ewma_B *= (Ewma_c * Ewma_d)
+        return Ewma_B
+
+    def get_variance_with_EWMA(self):
+        return self.getEwma_A() * self.getEwma_B()
+
     def vaR(self):
         self.variance = self.get_variance(current_return_window=self.portfolioReturn)
+        self.variance = self.get_variance_with_EWMA(current_return_window=self.portfolioReturn)
         self.ValueAtRisk = self.get_vaR_value(variance=self.variance)
 
     def vaRSeries(self):
@@ -166,8 +206,8 @@ class ParametricVaREwma(ParametricVaR):
 
 
 class HistoricalVaR(ValueAtRisk):
-    def __init__(self, matrix,interval,  weights, return_method, lookbackWindow):
-        super().__init__(matrix,interval,  weights, return_method, lookbackWindow)
+    def __init__(self, matrix, interval, weights, return_method, lookbackWindow):
+        super().__init__(matrix, interval, weights, return_method, lookbackWindow)
 
     def get_var_value(self, data):
         return abs(np.percentile(data, 100 * (1 - self.ci), interpolation='nearest'))
@@ -186,9 +226,9 @@ class HistoricalVaR(ValueAtRisk):
 
 
 class AgeWeightedHistoricalVaR(HistoricalVaR):
-    def __init__(self, matrix,interval,  weights, return_method, lookbackWindow, lambdaDecay):
-        super().__init__(matrix,interval,  weights, return_method, lookbackWindow)
-        self.lambdaDecay = lambdaDecay
+    def __init__(self, matrix, interval, weights, return_method, lookbackWindow, lambda_decay):
+        super().__init__(matrix, interval, weights, return_method, lookbackWindow)
+        self.lambda_decay = lambda_decay
         self.calculateScaledWeights()
 
     def get_var_value(self, data):
@@ -214,12 +254,12 @@ class AgeWeightedHistoricalVaR(HistoricalVaR):
 
 
 class MonteCarloVaR(ValueAtRisk):
-    def __init__(self, matrix,interval,  weights, return_method,
+    def __init__(self, matrix, interval, weights, return_method,
                  lookbackWindow, timeScaler=1, numSimulations=1000):
         self.timeScaler = timeScaler
         self.numSimulations = numSimulations
 
-        super().__init__(matrix,interval,  weights, return_method, lookbackWindow)
+        super().__init__(matrix, interval, weights, return_method, lookbackWindow)
 
     def setPortfolioPrices(self):
         self.portfolioPrices = np.dot(self.input, self.weights.T)
